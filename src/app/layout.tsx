@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Noto_Sans } from "next/font/google";
+import { Manrope, Material_Symbols_Outlined } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 
@@ -8,9 +8,15 @@ const display = Manrope({
   variable: "--font-display",
 });
 
-const body = Noto_Sans({
+const body = Manrope({
   subsets: ["latin"],
   variable: "--font-body",
+});
+
+const symbols = Material_Symbols_Outlined({
+  subsets: ["latin"],
+  variable: "--font-symbols",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -25,7 +31,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${display.variable} ${body.variable} min-h-screen bg-background`}>
+      <body
+        className={`${display.variable} ${body.variable} ${symbols.variable} min-h-screen bg-background`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

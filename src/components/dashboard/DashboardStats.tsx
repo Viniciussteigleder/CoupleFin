@@ -42,7 +42,7 @@ export function DashboardStats() {
   return (
     <section className="grid gap-4 md:grid-cols-3">
       {stats.map((item) => (
-        <Card key={item.label}>
+        <Card key={item.label} className="border-border/60 shadow-soft">
           <CardHeader>
             <CardTitle className="text-base text-muted-foreground">
               {item.label}

@@ -1,9 +1,13 @@
 import {
   Calendar,
   CheckCircle2,
+  CreditCard,
+  Flag,
   LayoutGrid,
+  LineChart,
   List,
   ListChecks,
+  PiggyBank,
   ReceiptText,
   Sparkles,
   Upload,
@@ -19,6 +23,21 @@ export const navItems = [
     label: "Transacoes",
     href: "/transactions",
     icon: List,
+  },
+  {
+    label: "Contas",
+    href: "/contas",
+    icon: CreditCard,
+  },
+  {
+    label: "Metas",
+    href: "/metas",
+    icon: Flag,
+  },
+  {
+    label: "Insights",
+    href: "/insights",
+    icon: LineChart,
   },
   {
     label: "Uploads",
@@ -46,6 +65,11 @@ export const navItems = [
     icon: ListChecks,
   },
   {
+    label: "Orcamento",
+    href: "/orcamento",
+    icon: PiggyBank,
+  },
+  {
     label: "Logs",
     href: "/logs",
     icon: ReceiptText,
@@ -53,6 +77,6 @@ export const navItems = [
 ];
 
 export const settingsItem = {
-  label: "Settings",
+  label: "Configuracoes",
   href: "/settings",
 };

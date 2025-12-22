@@ -3,26 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --background: 150 13% 97%;
-  --foreground: 160 18% 12%;
+  --background: 150 12% 97%;
+  --foreground: 163 17% 8%;
   --card: 0 0% 100%;
-  --card-foreground: 160 18% 12%;
+  --card-foreground: 163 17% 8%;
   --popover: 0 0% 100%;
-  --popover-foreground: 160 18% 12%;
+  --popover-foreground: 163 17% 8%;
   --primary: 160 85% 50%;
   --primary-foreground: 160 40% 12%;
-  --secondary: 150 10% 93%;
-  --secondary-foreground: 160 20% 16%;
-  --muted: 150 8% 92%;
-  --muted-foreground: 160 10% 38%;
-  --accent: 160 55% 85%;
+  --secondary: 150 10% 94%;
+  --secondary-foreground: 160 15% 18%;
+  --muted: 150 10% 94%;
+  --muted-foreground: 160 17% 46%;
+  --accent: 160 45% 88%;
   --accent-foreground: 160 30% 18%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --border: 150 12% 90%;
   --input: 150 12% 90%;
   --ring: 160 85% 50%;
-  --radius: 16px;
+  --radius: 14px;
 }
 
 .dark {
@@ -62,4 +62,9 @@ h4,
 h5,
 h6 {
   @apply font-display;
+}
+
+.material-symbols-outlined {
+  font-family: var(--font-symbols);
+  font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
 }

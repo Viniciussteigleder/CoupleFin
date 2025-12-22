@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TransactionsView } from "@/components/transactions/TransactionsView";
+import { Button } from "@/components/ui/button";
 
 export default function TransactionsPage() {
   return (
@@ -7,6 +8,7 @@ export default function TransactionsPage() {
       <PageHeader
         title="Transacoes"
         subtitle="Acompanhe entradas, despesas e pendencias do casal."
+        action={<Button variant="outline">Adicionar manual</Button>}
       />
 
       <TransactionsView />

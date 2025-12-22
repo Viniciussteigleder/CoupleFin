@@ -12,13 +12,13 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-4 md:flex-row md:items-center md:justify-between", className)}>
+    <div className={cn("flex flex-col gap-3 md:flex-row md:items-center md:justify-between", className)}>
       <div>
-        <h1 className="text-2xl font-semibold text-foreground md:text-3xl">
+        <h1 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-2 text-sm text-muted-foreground md:text-base">
+          <p className="mt-2 text-base text-muted-foreground md:text-lg">
             {subtitle}
           </p>
         ) : null}

@@ -10,7 +10,7 @@ export function TransactionItem({ transaction }: { transaction: Transaction }) {
     <button
       type="button"
       onClick={() => select(transaction.id)}
-      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 text-left transition hover:border-primary/40"
+      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 text-left transition hover:border-primary/40 hover:shadow-soft"
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-foreground">
