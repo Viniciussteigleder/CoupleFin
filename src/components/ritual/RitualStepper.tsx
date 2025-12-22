@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,18 @@ const steps = [
 
 export function RitualStepper() {
   const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("ritualStep");
+    const parsed = stored ? Number(stored) : 0;
+    if (!Number.isNaN(parsed) && parsed >= 0 && parsed < steps.length) {
+      setActiveStep(parsed);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("ritualStep", String(activeStep));
+  }, [activeStep]);
 
   const logEvent = async (type: string, payload: Record<string, unknown>) => {
     const supabase = createClient();
