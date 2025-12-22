@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
 const typeFilters = ["all", "import", "rule", "confirm", "ritual"] as const;
+const dateRanges = ["all", "7d", "30d"] as const;
 
 type FilterType = (typeof typeFilters)[number];
+type DateRange = (typeof dateRanges)[number];
 
 const filterMatchers: Record<Exclude<FilterType, "all">, (type: string) => boolean> = {
   import: (type) => type.startsWith("import"),
@@ -23,6 +25,7 @@ const filterMatchers: Record<Exclude<FilterType, "all">, (type: string) => boole
 export function LogList() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [range, setRange] = useState<DateRange>("all");
 
   const { data = [] } = useQuery({
     queryKey: ["logs"],
@@ -38,15 +41,23 @@ export function LogList() {
   });
 
   const filtered = useMemo(() => {
+    const since =
+      range === "all"
+        ? null
+        : new Date(Date.now() - Number(range.replace("d", "")) * 24 * 60 * 60 * 1000);
+
     return data.filter((item) => {
       const matchesQuery = query
         ? item.type.toLowerCase().includes(query.toLowerCase())
         : true;
       const matchesFilter =
         filter === "all" ? true : filterMatchers[filter](item.type);
-      return matchesQuery && matchesFilter;
+      const matchesRange = since
+        ? new Date(item.created_at).getTime() >= since.getTime()
+        : true;
+      return matchesQuery && matchesFilter && matchesRange;
     });
-  }, [data, filter, query]);
+  }, [data, filter, query, range]);
 
   return (
     <Card>
@@ -72,6 +83,16 @@ export function LogList() {
                 {type}
               </Button>
             ))}
+            {dateRanges.map((value) => (
+              <Button
+                key={value}
+                size="sm"
+                variant={range === value ? "default" : "outline"}
+                onClick={() => setRange(value)}
+              >
+                {value === "all" ? "todos" : value}
+              </Button>
+            ))}
           </div>
         </div>
         <div className="space-y-2 text-sm text-muted-foreground">
@@ -87,6 +108,11 @@ export function LogList() {
                 <p className="text-xs text-muted-foreground">
                   {new Date(item.created_at).toLocaleString()}
                 </p>
+                {item.payload_json ? (
+                  <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-muted/40 p-2 text-[11px] text-muted-foreground">
+                    {JSON.stringify(item.payload_json, null, 2)}
+                  </pre>
+                ) : null}
               </div>
             ))
           ) : (
