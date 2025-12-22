@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import Link from "next/link";
 
 export default function CalendarioPage() {
   return (
@@ -8,7 +9,11 @@ export default function CalendarioPage() {
       <PageHeader
         title="Calendario"
         subtitle="Visualize compromissos e gastos recorrentes." 
-        action={<Button variant="outline">Adicionar evento</Button>}
+        action={
+          <Button asChild variant="outline">
+            <Link href="/calendario/evento">Adicionar evento</Link>
+          </Button>
+        }
       />
 
       <CalendarView />

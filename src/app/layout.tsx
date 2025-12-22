@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Manrope, Material_Symbols_Outlined } from "next/font/google";
+import { Manrope } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 
@@ -13,8 +14,8 @@ const body = Manrope({
   variable: "--font-body",
 });
 
-const symbols = Material_Symbols_Outlined({
-  subsets: ["latin"],
+const symbols = localFont({
+  src: "../../public/fonts/MaterialSymbolsOutlined.ttf",
   variable: "--font-symbols",
   display: "swap",
 });

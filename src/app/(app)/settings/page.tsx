@@ -7,7 +7,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Settings"
+        title="Configuracoes"
         subtitle="Preferencias da conta e notificacoes."
         action={<Button variant="outline">Salvar</Button>}
       />
