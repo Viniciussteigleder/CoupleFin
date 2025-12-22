@@ -16,6 +16,25 @@ export default function MetasPage() {
         action={<Button>Nova meta</Button>}
       />
 
+      <Card className="border-border/60 shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-base text-muted-foreground">
+            Sugestao inteligente
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-lg font-semibold text-foreground">
+            Baseado na media dos ultimos 3 meses
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Recomendamos guardar R$ 1.200 este mes para manter a reserva de emergencia.
+          </p>
+          <Button size="sm" variant="outline">
+            Aplicar sugestao
+          </Button>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2">
         {goals.map((goal) => (
           <Card key={goal.name} className="border-border/60 shadow-soft">
@@ -36,6 +55,9 @@ export default function MetasPage() {
               <p className="text-xs text-muted-foreground">
                 {goal.progress}% concluido neste ciclo.
               </p>
+              <Button size="sm" variant="outline">
+                Atualizar meta
+              </Button>
             </CardContent>
           </Card>
         ))}
