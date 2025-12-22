@@ -1,59 +1,102 @@
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+"use client";
 
-const insights = [
-  {
-    title: "Gastos essenciais",
-    value: "R$ 3.150",
-    description: "Moradia e supermercado representam 62% do total.",
-    cta: "Revisar limites",
-  },
-  {
-    title: "Lazer",
-    value: "R$ 480",
-    description: "20% abaixo do limite semanal combinado.",
-    cta: "Ajustar combinado",
-  },
-  {
-    title: "Renda do casal",
-    value: "R$ 8.400",
-    description: "Meta mensal atingida em 92%.",
-    cta: "Planejar bonus",
-  },
-  {
-    title: "Assinaturas",
-    value: "R$ 189",
-    description: "3 servicos ativos podem ser revisados.",
-    cta: "Cancelar servico",
-  },
-];
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardFooter,
+  } from "@/components/ui/card";
+import { Lightbulb, ArrowRight, AlertCircle, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+// Mock implementation of Skeleton
+function SkeletonMock({ className }: { className?: string }) {
+    return <div className={`animate-pulse bg-muted rounded-md ${className}`} />;
+}
+
+type Insight = {
+    id: string;
+    title: string;
+    body: string;
+    cta: { label: string; href: string };
+    severity: "warning" | "tip" | "success";
+};
 
 export default function InsightsPage() {
-  return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="Insights"
-        subtitle="Indicadores e tendencias para manter o casal alinhado."
-      />
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [loading, setLoading] = useState(true);
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {insights.map((insight) => (
-          <Card key={insight.title} className="border-border/60 shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-base text-muted-foreground">
-                {insight.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-2xl font-bold text-foreground">{insight.value}</p>
-              <p className="text-sm text-muted-foreground">{insight.description}</p>
-              <Button size="sm" variant="outline">
-                {insight.cta}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+  useEffect(() => {
+    fetch("/api/insights")
+        .then(res => res.json())
+        .then(json => {
+            if (json.ok) setInsights(json.data);
+        })
+        .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div>
+         <h1 className="text-xl font-semibold md:text-2xl">Insights</h1>
+         <p className="text-sm text-muted-foreground">Recomendações inteligentes para suas finanças.</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+         {loading && (
+             <>
+                <SkeletonMock className="h-48 w-full" />
+                <SkeletonMock className="h-48 w-full" />
+                <SkeletonMock className="h-48 w-full" />
+             </>
+         )}
+
+         {!loading && insights.map(i => (
+             <Card key={i.id} className={cn("flex flex-col border-none shadow-sm h-full", 
+                 i.severity === "warning" ? "bg-amber-50" : 
+                 i.severity === "success" ? "bg-emerald-50" : "bg-blue-50"
+             )}>
+                 <CardHeader className="pb-3 relative">
+                    <div className="flex items-center gap-2 mb-2">
+                        {i.severity === "warning" && <AlertCircle className="h-5 w-5 text-amber-500" />}
+                        {i.severity === "tip" && <Lightbulb className="h-5 w-5 text-blue-500" />}
+                        {i.severity === "success" && <TrendingUp className="h-5 w-5 text-green-500" />}
+                        <span className={cn("text-xs font-bold uppercase", 
+                             i.severity === "warning" ? "text-amber-700" : 
+                             i.severity === "success" ? "text-emerald-700" : "text-blue-700"
+                        )}>
+                            {i.severity === "warning" ? "Atenção" : i.severity === "tip" ? "Dica" : "Conquista"}
+                        </span>
+                    </div>
+                    <CardTitle className={cn("text-lg", 
+                        i.severity === "warning" ? "text-amber-900" : 
+                        i.severity === "success" ? "text-emerald-900" : "text-blue-900"
+                    )}>{i.title}</CardTitle>
+                 </CardHeader>
+                 <CardContent className="flex-1">
+                     <p className={cn("text-sm leading-relaxed", 
+                        i.severity === "warning" ? "text-amber-800" : 
+                        i.severity === "success" ? "text-emerald-800" : "text-blue-800"
+                     )}>
+                         {i.body}
+                     </p>
+                 </CardContent>
+                 <CardFooter>
+                     <Button variant="ghost" className={cn("w-full justify-between hover:bg-black/5", 
+                        i.severity === "warning" ? "text-amber-900" : 
+                        i.severity === "success" ? "text-emerald-900" : "text-blue-900"
+                     )} asChild>
+                         <Link href={i.cta.href}>
+                             {i.cta.label}
+                             <ArrowRight className="h-4 w-4" />
+                         </Link>
+                     </Button>
+                 </CardFooter>
+             </Card>
+         ))}
       </div>
     </div>
   );

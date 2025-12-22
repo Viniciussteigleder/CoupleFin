@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/app/providers";
+import { MotionProvider } from "@/components/app/MotionProvider";
 
 const display = Manrope({
   subsets: ["latin"],
@@ -25,17 +26,23 @@ export const metadata: Metadata = {
   description: "Couple Budget Coach MVP",
 };
 
+import { Toaster } from "@/components/ui/toaster";
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${display.variable} ${body.variable} ${symbols.variable} min-h-screen bg-background`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <MotionProvider />
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

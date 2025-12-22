@@ -1,126 +1,138 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
-
-import { PageHeader } from "@/components/layout/PageHeader";
+import { useAppStore } from "@/lib/store/useAppStore";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CsvImport } from "@/components/uploads/CsvImport";
-
-const uploads = [
-  {
-    name: "activity (8).csv",
-    type: "CSV",
-    status: "Concluido",
-    href: "/uploads/detalhe",
-  },
-  {
-    name: "Recibo mercado.jpeg",
-    type: "OCR",
-    status: "Revisao necessaria",
-    href: "/uploads/revisar-ocr",
-  },
-];
+import { Card } from "@/components/ui/card";
+import { Upload, FileText, Plus, Camera } from "lucide-react";
+import { useState } from "react";
+import { OcrReviewDialog } from "@/components/app/OcrReviewDialog";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 export default function UploadsPage() {
-  const [tab, setTab] = useState<"csv" | "ocr">("csv");
+  const { transactions, categories, accounts } = useAppStore();
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  // Mock data for OCR simulation
+  const mockReceipt = {
+    description: "Restaurante Exemplo",
+    amount: -85.50,
+    date: new Date().toISOString(),
+  };
+
+  const startUpload = () => {
+    // Simulate upload delay
+    toast({ title: "Enviando arquivo...", duration: 2000 });
+    setTimeout(() => {
+        setIsReviewOpen(true);
+    }, 1500);
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleConfirmOcr = (data: any) => {
+     // Create pending transaction in store
+     // We need to add "pending" logic. For now we append to queue.
+     const newTx = {
+         id: crypto.randomUUID(),
+         ...data,
+         status: "pending", // Important: goes to Confirm Queue
+         source_upload_id: "upload_" + Date.now(),
+     };
+     
+     // Hack: modify store directly via partial hydration since we don't have dedicated addAction yet in prototype
+     // Ideally add `addTransaction` action to store.
+     const currentTxs = useAppStore.getState().transactions;
+     useAppStore.setState({ transactions: [newTx, ...currentTxs] });
+
+     toast({
+        title: "Sucesso!",
+        description: "Transação enviada para a Fila de Confirmação.",
+     });
+
+     setTimeout(() => router.push("/confirm-queue"), 1000);
+  };
+
+  const uploads = transactions
+    .filter(t => t.source_upload_id)
+    .map(t => ({
+        id: t.source_upload_id,
+        date: t.date,
+        items: 1, // simplified
+        status: "processed"
+    }));
+
+  // Deduplicate uploads by ID
+  const uniqueUploads = Array.from(new Map(uploads.map(item => [item.id, item])).values());
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="Importar transacoes"
-        subtitle="Importe extratos bancarios (CSV) ou notas fiscais para leitura OCR."
-        action={
-          <Button asChild variant="outline">
-            <Link href="/uploads/detalhe">Ver historico</Link>
-          </Button>
-        }
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold md:text-2xl">Uploads</h1>
+          <p className="text-sm text-muted-foreground">
+            Importe faturas ou recibos.
+          </p>
+        </div>
+        <Button onClick={startUpload}>
+            <Plus className="mr-2 h-4 w-4" /> Novo Upload
+        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+         <Card className="border-dashed border-2 flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors" onClick={startUpload}>
+             <div className="h-12 w-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
+                 <Upload className="h-6 w-6" />
+             </div>
+             <h3 className="font-semibold">Importar CSV ou PDF</h3>
+             <p className="text-sm text-muted-foreground mt-1">Fatura do cartão ou extrato bancário</p>
+         </Card>
+
+         <Card className="border-dashed border-2 flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors" onClick={startUpload}>
+             <div className="h-12 w-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
+                 <Camera className="h-6 w-6" />
+             </div>
+             <h3 className="font-semibold">Foto de Recibo</h3>
+             <p className="text-sm text-muted-foreground mt-1">Nós lemos os dados para você (OCR)</p>
+         </Card>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Histórico</h3>
+        {uniqueUploads.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-sm border rounded-lg">
+                Nenhum upload recente.
+            </div>
+        )}
+        {uniqueUploads.map((u) => (
+            <div key={u.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-muted rounded flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <p className="font-medium text-sm">Upload #{u.id?.slice(-4)}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {new Date(u.date).toLocaleDateString()} • {u.items} itens
+                        </p>
+                    </div>
+                </div>
+                <div className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded">
+                    Processado
+                </div>
+            </div>
+        ))}
+      </div>
+
+      <OcrReviewDialog 
+        open={isReviewOpen} 
+        onOpenChange={setIsReviewOpen}
+        categories={categories}
+        accounts={accounts}
+        initial={mockReceipt} // This would come from API in real app
+        onConfirm={handleConfirmOcr}
       />
-
-      <Card className="border-border/60 shadow-soft">
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="text-base text-muted-foreground">
-              Uploads
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Arraste o arquivo ou selecione no seu computador.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={tab === "csv" ? "secondary" : "outline"}
-              onClick={() => setTab("csv")}
-            >
-              CSV
-            </Button>
-            <Button
-              size="sm"
-              variant={tab === "ocr" ? "secondary" : "outline"}
-              onClick={() => setTab("ocr")}
-            >
-              OCR
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {tab === "csv" ? (
-            <div className="space-y-4">
-              <p className="text-sm font-semibold text-foreground">
-                Extrato bancario (CSV)
-              </p>
-              <CsvImport />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-6 text-sm text-muted-foreground">
-                Envie prints ou PDFs para extrair transacoes via OCR.
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Button>Selecionar imagens</Button>
-                <Button variant="outline">Importar ultimo recibo</Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/60 shadow-soft">
-        <CardHeader>
-          <CardTitle className="text-base text-muted-foreground">
-            Ultimos uploads
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {uploads.map((upload) => (
-            <div
-              key={upload.name}
-              className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background p-4 text-sm md:flex-row md:items-center md:justify-between"
-            >
-              <div>
-                <p className="text-sm font-semibold text-foreground">{upload.name}</p>
-                <p className="text-xs text-muted-foreground">Tipo: {upload.type}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    upload.status === "Concluido"
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "bg-amber-50 text-amber-600"
-                  }`}
-                >
-                  {upload.status}
-                </span>
-                <Button size="sm" variant="outline" asChild>
-                  <Link href={upload.href}>Abrir</Link>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
 }

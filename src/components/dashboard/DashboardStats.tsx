@@ -34,7 +34,7 @@ export function DashboardStats() {
   const pending = data?.filter((row) => row.status === "pending").length ?? 0;
 
   const stats = [
-    { label: "Saldo do mes", value: `R$ ${total.toFixed(2)}` },
+    { label: "Saldo do mês", value: `€ ${total.toFixed(2)}` },
     { label: "Pendencias", value: `${pending} itens` },
     { label: "Categorias ativas", value: `${categoryCount}` },
   ];

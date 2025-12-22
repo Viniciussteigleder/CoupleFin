@@ -15,12 +15,12 @@ const steps = [
   {
     title: "Ajustar metas da semana",
     description: "Acerte limites e prioridades com base no fluxo atual.",
-    highlight: "Meta sugerida: economizar R$ 300 ate domingo",
+    highlight: "Meta sugerida: economizar € 300 até domingo",
   },
   {
     title: "Novo acordo",
-    description: "Registre o novo combinado do casal para a proxima semana.",
-    highlight: "Ex: levar almoco 3x na semana",
+    description: "Registre o novo combinado do casal para a próxima semana.",
+    highlight: "Ex: levar almoço 3x na semana",
   },
 ];
 
@@ -94,7 +94,7 @@ export function RitualStepper() {
             Voltar
           </Button>
           <Button onClick={handleNext}>
-            {activeStep === steps.length - 1 ? "Finalizar" : "Proximo"}
+            {activeStep === steps.length - 1 ? "Finalizar" : "Próximo"}
           </Button>
         </div>
       </CardContent>

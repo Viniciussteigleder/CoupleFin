@@ -16,7 +16,7 @@ import { findDuplicateGroups } from "@/lib/utils/dedupe";
 
 const confidenceLabels = {
   high: "Alta",
-  medium: "Media",
+  medium: "Média",
   low: "Baixa",
   unknown: "Desconhecido",
 } as const;
@@ -292,9 +292,9 @@ export function ConfirmQueue() {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Transacoes pendentes</CardTitle>
+              <CardTitle>Transações pendentes</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Revise transacoes e aplique categorias com um clique.
+                Revise transações e aplique categorias com um clique.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -412,11 +412,11 @@ export function ConfirmQueue() {
                   />
                 </div>
                 <span>Data</span>
-                <span>Descricao original</span>
+                <span>Descrição original</span>
                 <span>Categoria</span>
                 <span className="text-right">Valor</span>
                 <span>Tipo</span>
-                <span className="text-center">Confianca</span>
+                <span className="text-center">Confiança</span>
               </div>
 
               <div className="divide-y divide-border/60">
@@ -469,7 +469,7 @@ export function ConfirmQueue() {
                             item.amount < 0 ? "text-rose-500" : "text-emerald-600"
                           }`}
                         >
-                          {item.amount < 0 ? "-" : "+"}R$ {Math.abs(item.amount).toFixed(2)}
+                          {item.amount < 0 ? "-" : "+"}€ {Math.abs(item.amount).toFixed(2)}
                         </span>
                         <span className="text-muted-foreground">Variavel</span>
                         <div className="flex items-center justify-center">

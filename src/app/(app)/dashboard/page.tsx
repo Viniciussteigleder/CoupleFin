@@ -1,172 +1,119 @@
 "use client";
 
-import { useState } from "react";
-
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DashboardStats } from "@/components/dashboard/DashboardStats";
-import { DashboardAlerts } from "@/components/dashboard/DashboardAlerts";
-
-const cards = [
-  { name: "Cartao Gold", balance: "R$ 1.420", due: "Vence em 10 dias" },
-  { name: "Cartao Miles", balance: "R$ 980", due: "Vence em 16 dias" },
-];
-
-const insights = [
-  { title: "Supermercado", detail: "12% acima da media", cta: "Revisar" },
-  { title: "Mobilidade", detail: "R$ 320 no mes", cta: "Ver detalhes" },
-  { title: "Assinaturas", detail: "3 servicos ativos", cta: "Gerenciar" },
-];
-
-const activity = [
-  { title: "Importacao CSV", detail: "23 transacoes pendentes" },
-  { title: "Regra aplicada", detail: "Uber -> Transporte" },
-  { title: "Ritual semanal", detail: "Acordo atualizado" },
-];
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useAppStore } from "@/lib/store/useAppStore";
+import { cn } from "@/lib/utils";
+import { useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Wallet, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 export default function DashboardPage() {
-  const [month, setMonth] = useState(() => new Date());
-  const label = month.toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+  const reduceMotion = useReducedMotion();
+  const { categories, budgets, transactions, hydrateFromSeed } = useAppStore();
+
+  useEffect(() => {
+    (async () => {
+      // If store is empty/fresh, load seed.
+      if (categories.length === 0) {
+        try {
+            const res = await fetch("/api/seed");
+            const json = await res.json();
+            if (json.ok && json.data) {
+                hydrateFromSeed(json.data);
+            }
+        } catch (e) {
+            console.error("Failed to seed", e);
+        }
+      }
+    })();
+  }, [categories.length, hydrateFromSeed]);
+
+  const monthExpenses = transactions
+    .filter((t) => t.amount < 0 && t.status !== "archived")
+    .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+
+  const pending = transactions.filter((t) => t.status === "pending").length;
+  const duplicates = transactions.filter((t) => t.status === "duplicate").length;
+
+  const outBudget = budgets.map((b) => {
+    const categoryName = categories.find(c => c.id === b.categoryId)?.name || b.categoryId;
+    const spent = transactions
+      .filter((t) => t.amount < 0 && t.categoryId === b.categoryId && t.status !== "archived")
+      .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+    return { ...b, categoryName, spent, pct: Math.min(100, (spent / Math.max(1, b.monthlyLimit)) * 100) };
+  }).sort((a, b) => b.pct - a.pct);
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="Painel mensal"
-        subtitle="Resumo de gastos, metas e categorias do casal."
-        action={<Button>Adicionar transacao</Button>}
-      />
-
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-        >
-          Mes anterior
-        </Button>
-        <span className="text-sm font-semibold text-foreground">
-          {label.charAt(0).toUpperCase() + label.slice(1)}
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-        >
-          Proximo mes
-        </Button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold md:text-2xl">Painel Mensal</h1>
+          <p className="text-sm text-muted-foreground">
+            Um resumo rápido do mês + o que precisa de atenção.
+          </p>
+        </div>
+        <Badge variant={pending ? "destructive" : "secondary"} className="gap-2 h-8 px-3">
+          {pending ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+          {pending ? `${pending} pendências` : "Tudo em dia"}
+        </Badge>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card className="relative overflow-hidden border-border/60 shadow-soft">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
-          <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">
-              Projecao do mes
-            </CardTitle>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Gasto no mês</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="relative space-y-4">
-            <p className="text-4xl font-black text-foreground">R$ 4.250,00</p>
-            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-              <div>
-                <p>Receitas previstas</p>
-                <p className="font-semibold text-emerald-600">R$ 10.000,00</p>
-              </div>
-              <div>
-                <p>Despesas previstas</p>
-                <p className="font-semibold text-rose-500">R$ 5.750,00</p>
-              </div>
-            </div>
+          <CardContent>
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="text-2xl font-bold"
+            >
+              € {monthExpenses.toFixed(2)}
+            </motion.div>
+            <p className="mt-1 text-xs text-muted-foreground">Inclui confirmadas + pendentes.</p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-border/60 shadow-soft">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-100/40 to-transparent" />
-          <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">
-              Compromissos restantes
-            </CardTitle>
+        <Card className="rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Duplicatas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="relative space-y-4">
-            <p className="text-4xl font-black text-foreground">R$ 1.200,00</p>
-            <p className="text-sm text-muted-foreground">
-              3 contas recorrentes vencendo nesta semana.
+          <CardContent>
+            <div className="text-2xl font-bold">{duplicates}</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Compare e resolva para manter a confiança.
             </p>
-            <Button variant="outline" size="sm">
-              Ver detalhes
-            </Button>
           </CardContent>
         </Card>
-      </section>
 
-      <DashboardStats />
-
-      <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <Card className="border-border/60 shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">
-              Ciclo dos cartoes
-            </CardTitle>
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Orçamentos (top)</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col gap-3">
-              {cards.map((card) => (
-                <div
-                  key={card.name}
-                  className="flex items-center justify-between rounded-2xl border border-border/60 bg-background px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{card.name}</p>
-                    <p className="text-xs text-muted-foreground">{card.due}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">
-                    {card.balance}
+          <CardContent className="space-y-4 pt-2">
+            {outBudget.slice(0, 3).map((b) => (
+              <div key={b.categoryId} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">{b.categoryName}</span>
+                  <span className={b.pct > 90 ? "text-destructive" : "text-muted-foreground"}>
+                      {Math.round(b.pct)}%
                   </span>
                 </div>
-              ))}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {insights.map((insight) => (
-                <div
-                  key={insight.title}
-                  className="rounded-2xl border border-border/60 bg-muted/30 p-4"
-                >
-                  <p className="text-sm font-semibold text-foreground">
-                    {insight.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{insight.detail}</p>
-                  <Button size="sm" variant="ghost" className="mt-2">
-                    {insight.cta}
-                  </Button>
-                </div>
-              ))}
-            </div>
+                <Progress value={b.pct} className={cn("h-2", b.pct > 90 && "bg-destructive/20")} />
+              </div>
+            ))}
+            {outBudget.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum orçamento definido.</p>
+            )}
           </CardContent>
         </Card>
-
-        <div className="grid gap-4">
-          <DashboardAlerts />
-          <Card className="border-border/60 shadow-soft">
-            <CardHeader>
-              <CardTitle>Atividade recente</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              {activity.map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-xl border border-border/60 bg-background px-4 py-3"
-                >
-                  <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{item.detail}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

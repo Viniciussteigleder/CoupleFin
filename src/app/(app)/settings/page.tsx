@@ -1,92 +1,135 @@
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SignOutButton } from "@/components/auth/SignOutButton";
+"use client";
 
-const languages = ["Portuguese (BR)", "English", "Spanish"];
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { useState } from "react";
+import { Globe, MapPin, Coins, Calendar } from "lucide-react";
 
 export default function SettingsPage() {
+  const { toast } = useToast();
+  const [language, setLanguage] = useState("pt");
+  const [location, setLocation] = useState("de");
+  const [currency, setCurrency] = useState("eur");
+
+  const handleSave = () => {
+    toast({
+      title: "Configurações salvas",
+      description: "Suas preferências de idioma e local foram atualizadas.",
+    });
+  };
+
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="Configuracoes"
-        subtitle="Preferencias da conta e notificacoes."
-        action={<Button variant="outline">Salvar</Button>}
-      />
+    <div className="max-w-4xl mx-auto py-8 space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+        <p className="text-muted-foreground">
+          Gerencie suas preferências de exibição e localização.
+        </p>
+      </div>
 
-      <Card className="border-border/60 shadow-soft">
-        <CardHeader>
-          <CardTitle>Conta</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <div className="flex items-center justify-between">
-            <span>Email</span>
-            <span className="font-semibold text-foreground">casal@exemplo.com</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Plano</span>
-            <span className="font-semibold text-foreground">Premium</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6">
+        <Card className="rounded-3xl border-none shadow-sm bg-card/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Globe className="h-5 w-5 text-primary" />
+              Idioma e Região
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label>Idioma do App</Label>
+                <p className="text-sm text-muted-foreground">
+                  Escolha o idioma da interface.
+                </p>
+              </div>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-[180px] rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pt">Português</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="de">Deutsch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      <Card className="border-border/60 shadow-soft">
-        <CardHeader>
-          <CardTitle>Idioma</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Portugues e o idioma padrao do app.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {languages.map((language) => (
-              <Button
-                key={language}
-                size="sm"
-                variant={language === "Portuguese (BR)" ? "default" : "outline"}
-              >
-                {language}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label>Localização</Label>
+                <p className="text-sm text-muted-foreground">
+                  Utilizada para formatos de data e leis locais.
+                </p>
+              </div>
+              <Select value={location} onValueChange={setLocation}>
+                <SelectTrigger className="w-[180px] rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="br">Brasil</SelectItem>
+                  <SelectItem value="de">Alemanha</SelectItem>
+                  <SelectItem value="us">Estados Unidos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card className="border-border/60 shadow-soft">
-        <CardHeader>
-          <CardTitle>Preferencias</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span>Alertas semanais</span>
-              <span className="font-semibold text-foreground">Ativo</span>
+        <Card className="rounded-3xl border-none shadow-sm bg-card/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Coins className="h-5 w-5 text-primary" />
+              Financeiro
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label>Moeda Principal</Label>
+                <p className="text-sm text-muted-foreground">
+                  Símbolo utilizado nos relatórios.
+                </p>
+              </div>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger className="w-[180px] rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="eur">Euro (€)</SelectItem>
+                  <SelectItem value="brl">Real (R$)</SelectItem>
+                  <SelectItem value="usd">Dólar ($)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="h-3 w-full rounded-full bg-muted">
-              <div className="h-3 w-4/5 rounded-full bg-primary" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span>Resumo do mes</span>
-              <span className="font-semibold text-foreground">Ativo</span>
-            </div>
-            <div className="h-3 w-full rounded-full bg-muted">
-              <div className="h-3 w-3/5 rounded-full bg-primary" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card className="border-border/60 shadow-soft">
-        <CardHeader>
-          <CardTitle>Seguranca</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-          <p>Encerrar a sessao neste dispositivo.</p>
-          <SignOutButton />
-        </CardContent>
-      </Card>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label>Sincronização Automática</Label>
+                <p className="text-sm text-muted-foreground">
+                  Identificar contas ao subir extratos.
+                </p>
+              </div>
+              <Switch defaultChecked />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <Button variant="ghost" className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleSave} className="rounded-xl px-8">Salvar Alterações</Button>
+        </div>
+      </div>
     </div>
   );
 }
