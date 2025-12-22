@@ -10,8 +10,8 @@ interface TransactionRow {
   status: string | null;
   category_id: string | null;
   account_id: string | null;
-  categories?: { name: string } | null;
-  accounts?: { name: string } | null;
+  categories?: { name: string } | { name: string }[] | null;
+  accounts?: { name: string } | { name: string }[] | null;
 }
 
 function toNumber(value: number | string | null) {
@@ -37,15 +37,24 @@ export async function fetchTransactions(params?: {
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data as TransactionRow[]).map((row) => ({
-    id: row.id,
-    merchant: row.merchant ?? "Sem descricao",
-    date: row.date,
-    amount: toNumber(row.amount_cf ?? row.amount),
-    status: (row.status ?? "pending") as Transaction["status"],
-    category: row.categories?.name ?? null,
-    categoryId: row.category_id ?? null,
-    account: row.accounts?.name ?? null,
-    accountId: row.account_id ?? null,
-  }));
+  return (data as TransactionRow[]).map((row) => {
+    const categoryName = Array.isArray(row.categories)
+      ? row.categories[0]?.name
+      : row.categories?.name;
+    const accountName = Array.isArray(row.accounts)
+      ? row.accounts[0]?.name
+      : row.accounts?.name;
+
+    return {
+      id: row.id,
+      merchant: row.merchant ?? "Sem descricao",
+      date: row.date,
+      amount: toNumber(row.amount_cf ?? row.amount),
+      status: (row.status ?? "pending") as Transaction["status"],
+      category: categoryName ?? null,
+      categoryId: row.category_id ?? null,
+      account: accountName ?? null,
+      accountId: row.account_id ?? null,
+    };
+  });
 }

@@ -8,3 +8,10 @@
 - Small, focused PRs are preferred (single domain slice per branch).
 - Feature branches must start from `dev` and follow the naming conventions in `PROJECT_BOARD.md`.
 - Coordinate cross-cutting changes (schema, shared types) with branch owners before merging.
+
+## Branch protection (recommended)
+
+- Require status checks to pass before merging (lint, typecheck, e2e).
+- Require at least 1 approving review.
+- Require branches to be up to date before merge.
+- Restrict direct pushes to `main` and `dev`.

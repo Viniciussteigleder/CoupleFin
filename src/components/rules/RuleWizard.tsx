@@ -74,7 +74,7 @@ export function RuleWizard() {
       queryClient.invalidateQueries({ queryKey: ["rules"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["transactions", "pending"] });
-    } catch (err) {
+    } catch {
       setMessage("Nao foi possivel salvar a regra.");
     } finally {
       setSaving(false);

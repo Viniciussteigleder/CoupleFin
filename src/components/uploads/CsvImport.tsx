@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { parseAmount, toAmount, toAmountCf } from "@/lib/utils/money";
+import { normalizeDate } from "@/lib/utils/dates";
 
 const headerAliases = {
   date: ["date", "data", "transactiondate", "posteddate"],
@@ -59,12 +60,13 @@ export function CsvImport() {
 
         result.data.forEach((row) => {
           const amountValue = parseAmount(row[amountKey] ?? "");
-          if (!row[dateKey] || !row[merchantKey] || amountValue === null) {
+          const normalizedDate = normalizeDate(row[dateKey] ?? "");
+          if (!normalizedDate || !row[merchantKey] || amountValue === null) {
             return;
           }
 
           parsed.push({
-            date: row[dateKey],
+            date: normalizedDate,
             merchant: row[merchantKey],
             amount: amountValue,
           });
@@ -143,7 +145,7 @@ export function CsvImport() {
       setRows([]);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["transactions", "pending"] });
-    } catch (err) {
+    } catch {
       setError("Falha ao importar. Verifique o CSV e tente novamente.");
     } finally {
       setLoading(false);

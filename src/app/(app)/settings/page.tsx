@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 export default function SettingsPage() {
   return (
@@ -18,6 +19,16 @@ export default function SettingsPage() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>Email: casal@exemplo.com</p>
           <p>Plano: Premium</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Seguranca</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+          <p>Encerrar a sessao neste dispositivo.</p>
+          <SignOutButton />
         </CardContent>
       </Card>
     </div>

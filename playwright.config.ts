@@ -6,6 +6,9 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
+  reporter: process.env.CI
+    ? [["line"], ["html", { open: "never" }]]
+    : "list",
   webServer: {
     command: "npm run dev",
     url: "http://localhost:3000",
