@@ -57,7 +57,7 @@ export function CalendarView() {
   }, [daysInMonth, firstWeekday, dayTotals]);
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-soft">
       <CardHeader>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>

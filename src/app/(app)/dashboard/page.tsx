@@ -13,6 +13,48 @@ export default function DashboardPage() {
         action={<Button>Adicionar transacao</Button>}
       />
 
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card className="relative overflow-hidden border-border/60 shadow-soft">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
+          <CardHeader>
+            <CardTitle className="text-base text-muted-foreground">
+              Saldo projetado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative space-y-4">
+            <p className="text-4xl font-black text-foreground">R$ 4.250,00</p>
+            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+              <div>
+                <p>Receitas previstas</p>
+                <p className="font-semibold text-emerald-600">R$ 10.000,00</p>
+              </div>
+              <div>
+                <p>Despesas previstas</p>
+                <p className="font-semibold text-rose-500">R$ 5.750,00</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-border/60 shadow-soft">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-100/40 to-transparent" />
+          <CardHeader>
+            <CardTitle className="text-base text-muted-foreground">
+              Compromissos restantes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative space-y-4">
+            <p className="text-4xl font-black text-foreground">R$ 1.200,00</p>
+            <p className="text-sm text-muted-foreground">
+              3 contas recorrentes vencendo nesta semana.
+            </p>
+            <Button variant="outline" size="sm">
+              Ver detalhes
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+
       <DashboardStats />
 
       <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">

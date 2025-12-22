@@ -63,7 +63,7 @@ export function RitualStepper() {
   };
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-soft">
       <CardHeader>
         <CardTitle>Ritual semanal guiado</CardTitle>
       </CardHeader>

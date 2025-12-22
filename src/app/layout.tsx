@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Noto_Sans } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 
@@ -8,7 +8,7 @@ const display = Manrope({
   variable: "--font-display",
 });
 
-const body = Noto_Sans({
+const body = Manrope({
   subsets: ["latin"],
   variable: "--font-body",
 });
@@ -25,6 +25,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"
+          rel="stylesheet"
+        />
+      </head>
       <body className={`${display.variable} ${body.variable} min-h-screen bg-background`}>
         <Providers>{children}</Providers>
       </body>

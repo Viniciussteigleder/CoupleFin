@@ -12,7 +12,7 @@ export default function SettingsPage() {
         action={<Button variant="outline">Salvar</Button>}
       />
 
-      <Card>
+      <Card className="border-border/60 shadow-soft">
         <CardHeader>
           <CardTitle>Conta</CardTitle>
         </CardHeader>
@@ -22,7 +22,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-border/60 shadow-soft">
         <CardHeader>
           <CardTitle>Seguranca</CardTitle>
         </CardHeader>

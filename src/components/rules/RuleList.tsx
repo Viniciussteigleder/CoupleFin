@@ -29,7 +29,7 @@ export function RuleList() {
   });
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-soft">
       <CardHeader>
         <CardTitle>Regras ativas</CardTitle>
       </CardHeader>

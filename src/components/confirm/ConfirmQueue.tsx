@@ -167,7 +167,7 @@ export function ConfirmQueue() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border-border/60 shadow-soft">
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <CardTitle>Transacoes pendentes</CardTitle>
@@ -231,7 +231,7 @@ export function ConfirmQueue() {
       </Card>
       {message ? <p className="text-sm text-red-500">{message}</p> : null}
 
-      <Card>
+      <Card className="border-border/60 shadow-soft">
         <CardHeader>
           <CardTitle>Duplicatas detectadas</CardTitle>
         </CardHeader>

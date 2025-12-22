@@ -82,7 +82,7 @@ export function RuleWizard() {
   };
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-soft">
       <CardHeader>
         <CardTitle>Criar regra</CardTitle>
       </CardHeader>
