@@ -10,9 +10,9 @@ test("dashboard loads", async ({ page }) => {
 test("uploads loads", async ({ page }) => {
   await page.goto("/uploads");
   await expect(
-    page.getByRole("heading", { name: "Uploads", level: 1 })
+    page.getByRole("heading", { name: "Importar transacoes" })
   ).toBeVisible();
-  await expect(page.getByText("Importar CSV")).toBeVisible();
+  await expect(page.getByText("Extrato bancario (CSV)")).toBeVisible();
 });
 
 test("confirmar loads", async ({ page }) => {

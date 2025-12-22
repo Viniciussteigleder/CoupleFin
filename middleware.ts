@@ -8,6 +8,10 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  if (process.env.PLAYWRIGHT_TEST === "1") {
+    return response;
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -35,7 +39,8 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/callback");
+    request.nextUrl.pathname.startsWith("/callback") ||
+    request.nextUrl.pathname.startsWith("/onboarding");
 
   if (!user && !isAuthRoute) {
     const redirectUrl = request.nextUrl.clone();

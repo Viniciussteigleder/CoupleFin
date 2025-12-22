@@ -10,9 +10,17 @@ import { parseAmount, toAmount, toAmountCf } from "@/lib/utils/money";
 import { normalizeDate } from "@/lib/utils/dates";
 
 const headerAliases = {
-  date: ["date", "data", "transactiondate", "posteddate"],
-  merchant: ["description", "merchant", "descricao", "historico", "memo"],
-  amount: ["amount", "valor", "value", "total", "amt"],
+  date: ["date", "data", "transactiondate", "posteddate", "datum", "buchungsdatum"],
+  merchant: [
+    "description",
+    "merchant",
+    "descricao",
+    "historico",
+    "memo",
+    "beschreibung",
+    "erscheintaufihrerabrechnungals",
+  ],
+  amount: ["amount", "valor", "value", "total", "amt", "betrag"],
 };
 
 type ParsedRow = {
@@ -56,18 +64,28 @@ export function CsvImport() {
         }
 
         const parsed: ParsedRow[] = [];
+        const isCardStatement =
+          headers.includes("betrag") && headers.some((header) => header.includes("konto#"));
 
         result.data.forEach((row) => {
-          const amountValue = parseAmount(row[amountKey] ?? "");
+          const rawAmount = row[amountKey] ?? "";
+          const amountValue = parseAmount(rawAmount);
           const normalizedDate = normalizeDate(row[dateKey] ?? "");
           if (!normalizedDate || !row[merchantKey] || amountValue === null) {
             return;
           }
 
+          const rawText = String(rawAmount).trim();
+          const signedAmount = rawText.startsWith("-") || rawText.startsWith("+")
+            ? amountValue
+            : isCardStatement
+              ? -Math.abs(amountValue)
+              : amountValue;
+
           parsed.push({
             date: normalizedDate,
             merchant: row[merchantKey],
-            amount: amountValue,
+            amount: signedAmount,
           });
         });
 

@@ -35,25 +35,40 @@ export function isPotentialDuplicate(a: Transaction, b: Transaction) {
 export function findDuplicateGroups(transactions: Transaction[]) {
   const groups: Transaction[][] = [];
   const visited = new Set<string>();
+  const byAmount = new Map<string, Transaction[]>();
 
-  for (let i = 0; i < transactions.length; i += 1) {
-    const current = transactions[i];
-    if (visited.has(current.id)) continue;
+  transactions.forEach((transaction) => {
+    const amountKey = transaction.amount.toFixed(2);
+    const list = byAmount.get(amountKey) ?? [];
+    list.push(transaction);
+    byAmount.set(amountKey, list);
+  });
 
-    const group = [current];
-    for (let j = i + 1; j < transactions.length; j += 1) {
-      const candidate = transactions[j];
-      if (visited.has(candidate.id)) continue;
-      if (isPotentialDuplicate(current, candidate)) {
-        group.push(candidate);
+  byAmount.forEach((list) => {
+    const sorted = [...list].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    for (let i = 0; i < sorted.length; i += 1) {
+      const current = sorted[i];
+      if (visited.has(current.id)) continue;
+
+      const group = [current];
+      for (let j = i + 1; j < sorted.length; j += 1) {
+        const candidate = sorted[j];
+        if (visited.has(candidate.id)) continue;
+        if (daysBetween(current.date, candidate.date) > 2) break;
+        if (isPotentialDuplicate(current, candidate)) {
+          group.push(candidate);
+        }
+      }
+
+      if (group.length > 1) {
+        group.forEach((item) => visited.add(item.id));
+        groups.push(group);
       }
     }
-
-    if (group.length > 1) {
-      group.forEach((item) => visited.add(item.id));
-      groups.push(group);
-    }
-  }
+  });
 
   return groups;
 }
