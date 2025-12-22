@@ -51,7 +51,7 @@ export function OnboardingShell({
                     </Button>
                 </Link>
             ) : <div className="w-8" />}
-          <span className="font-semibold text-primary">Couple Budget Coach</span>
+          <span className="font-semibold text-primary">CasalFin</span>
         </div>
         <div className="w-32">
              <Progress value={progress} className="h-2" />

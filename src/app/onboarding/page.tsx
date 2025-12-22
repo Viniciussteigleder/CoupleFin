@@ -11,7 +11,7 @@ export default function WelcomePage() {
       step={1}
       totalSteps={7}
       title="Bem-vindos"
-      description="Vamos configurar o Couple Budget Coach para vocês em poucos minutos."
+      description="Vamos configurar o CasalFin para vocês em poucos minutos."
       onNext={() => router.push("/onboarding/categories")}
       nextLabel="Começar"
     >

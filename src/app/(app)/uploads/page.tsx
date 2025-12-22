@@ -24,9 +24,28 @@ import { parseCurrency } from "@/lib/formatCurrency";
 import { trackEvent } from "@/lib/analytics";
 
 const headerAliases = {
-  date: ["date", "data", "transactiondate", "posteddate", "datum"],
-  description: ["description", "merchant", "descricao", "historico", "memo", "beschreibung"],
-  amount: ["amount", "valor", "value", "total", "amt", "betrag"],
+  date: [
+    "date",
+    "data",
+    "transactiondate",
+    "posteddate",
+    "datum",
+    "authorisedon",
+    "processedon",
+  ],
+  description: [
+    "description",
+    "merchant",
+    "descricao",
+    "historico",
+    "memo",
+    "beschreibung",
+    "keymmdesc",
+    "keyamexdesc",
+    "erscheintaufihrerabrechnungals",
+    "betreff",
+  ],
+  amount: ["amount", "valor", "value", "total", "amt", "betrag", "weiteredetails"],
 };
 
 type CsvRow = Record<string, string>;
@@ -35,6 +54,96 @@ type Mapping = {
   dateKey: string;
   descriptionKey: string;
   amountKey: string;
+};
+
+type FieldOption = {
+  key: string;
+  label: string;
+};
+
+const normalizeHeader = (header: string) =>
+  header.toLowerCase().replace(/\s+/g, "").replace(/_/g, "");
+
+const makeHeaderTransformer = () => {
+  const counts = new Map<string, number>();
+  return (header: string) => {
+    const normalized = normalizeHeader(header);
+    const count = (counts.get(normalized) ?? 0) + 1;
+    counts.set(normalized, count);
+    return count === 1 ? normalized : `${normalized}__${count}`;
+  };
+};
+
+const detectMapping = (fields: string[], rows: CsvRow[] = []): Mapping | null => {
+  const getKey = (key: keyof typeof headerAliases) =>
+    fields.find((field) => headerAliases[key].includes(field));
+
+  const preferredDesc = fields.find((field) => ["keymmdesc", "keyamexdesc"].includes(field));
+  const descriptionKey = preferredDesc ?? getKey("description");
+
+  const preferredDate = fields.find((field) =>
+    ["authorisedon", "processedon", "datum", "date", "data"].includes(field)
+  );
+  const dateKey = preferredDate ?? getKey("date");
+
+  const amountCandidates = fields.filter((field) =>
+    headerAliases.amount.some((alias) => field.startsWith(alias))
+  );
+  const amountKey = amountCandidates.sort((a, b) => scoreAmountKey(b, rows) - scoreAmountKey(a, rows))[0];
+
+  if (!dateKey || !descriptionKey || !amountKey) return null;
+  return { dateKey, descriptionKey, amountKey };
+};
+
+const scoreAmountKey = (key: string, rows: CsvRow[]) => {
+  let score = 0;
+  rows.slice(0, 20).forEach((row) => {
+    const value = row[key] ?? "";
+    if (/[\\d]/.test(value)) score += 1;
+    if (/[\\.,]\\d{1,2}/.test(value)) score += 2;
+    if (/^-/.test(value.trim())) score += 1;
+  });
+  return score;
+};
+
+const parseDateValue = (raw: string) => {
+  if (!raw) return null;
+  if (/^\\d{4}-\\d{2}-\\d{2}/.test(raw)) {
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const match = raw.match(/(\\d{1,2})[./-](\\d{1,2})[./-](\\d{2,4})/);
+  if (match) {
+    const day = match[1].padStart(2, "0");
+    const month = match[2].padStart(2, "0");
+    const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+    const date = new Date(`${year}-${month}-${day}`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const findHeaderRowIndex = (rows: string[][]) => {
+  let bestIndex = -1;
+  let bestScore = 0;
+
+  rows.slice(0, 10).forEach((row, index) => {
+    const normalized = row.map((cell) => normalizeHeader(cell));
+    const score = normalized.reduce((count, cell) => {
+      const isMatch =
+        headerAliases.date.includes(cell) ||
+        headerAliases.description.includes(cell) ||
+        headerAliases.amount.includes(cell);
+      return count + (isMatch ? 1 : 0);
+    }, 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = index;
+    }
+  });
+
+  return bestScore >= 2 ? bestIndex : -1;
 };
 
 export default function UploadsPage() {
@@ -51,7 +160,7 @@ export default function UploadsPage() {
   const [ocrLoading, setOcrLoading] = useState(false);
   const ocrInputRef = useRef<HTMLInputElement | null>(null);
   const [mappingOpen, setMappingOpen] = useState(false);
-  const [mappingFields, setMappingFields] = useState<string[]>([]);
+  const [mappingFields, setMappingFields] = useState<FieldOption[]>([]);
   const [mapping, setMapping] = useState<Mapping>({
     dateKey: "",
     descriptionKey: "",
@@ -162,30 +271,78 @@ export default function UploadsPage() {
     setTimeout(() => router.push("/confirm-queue"), 1000);
   };
 
-  const detectMapping = (fields: string[]): Mapping | null => {
-    const getKey = (key: keyof typeof headerAliases) =>
-      fields.find((field) => headerAliases[key].includes(field));
-
-    const dateKey = getKey("date");
-    const descriptionKey = getKey("description");
-    const amountKey = getKey("amount");
-
-    if (!dateKey || !descriptionKey || !amountKey) return null;
-    return { dateKey, descriptionKey, amountKey };
-  };
-
   const handleCsvFile = (file: File) => {
     setStatus("reading");
+    const transformHeader = makeHeaderTransformer();
     Papa.parse<CsvRow>(file, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: (header) => header.toLowerCase().replace(/\s+/g, "").replace(/_/g, ""),
+      transformHeader,
       complete: async (result) => {
         const fields = result.meta.fields ?? [];
-        setMappingFields(fields);
         setParsedRows(result.data);
 
-        const detected = detectMapping(fields);
+        if (fields.length <= 1) {
+          Papa.parse<string[]>(file, {
+            header: false,
+            skipEmptyLines: true,
+            complete: async (raw) => {
+              const rows = raw.data as string[][];
+              const headerIndex = findHeaderRowIndex(rows);
+              if (headerIndex >= 0) {
+                const headerTransform = makeHeaderTransformer();
+                const headers = rows[headerIndex].map((cell) => headerTransform(cell));
+                const dataRows = rows.slice(headerIndex + 1);
+                const objects = dataRows.map((row) =>
+                  headers.reduce<Record<string, string>>((acc, key, idx) => {
+                    acc[key] = row[idx] ?? "";
+                    return acc;
+                  }, {})
+                );
+                setMappingFields(
+                  headers.map((key, idx) => ({
+                    key,
+                    label: `${rows[headerIndex][idx] ?? key}${key.includes("__") ? ` (${key.split("__")[1]})` : ""}`,
+                  }))
+                );
+                setParsedRows(objects);
+
+                const detected = detectMapping(headers, objects);
+                if (detected) {
+                  setMapping(detected);
+                  setStatus("creating");
+                  setTimeout(() => finalizeImport(detected, objects), 400);
+                  return;
+                }
+              }
+
+              setStatus("mapping");
+              setMappingOpen(true);
+            },
+          });
+          return;
+        }
+
+        const rawHeaders = await new Promise<string[] | null>((resolve) => {
+          Papa.parse<string[]>(file, {
+            header: false,
+            skipEmptyLines: true,
+            complete: (raw) => {
+              const rows = raw.data as string[][];
+              const headerIndex = findHeaderRowIndex(rows);
+              resolve(headerIndex >= 0 ? rows[headerIndex] : null);
+            },
+            error: () => resolve(null),
+          });
+        });
+
+        const fieldOptions = fields.map((key, idx) => ({
+          key,
+          label: `${rawHeaders?.[idx] ?? key}${key.includes("__") ? ` (${key.split("__")[1]})` : ""}`,
+        }));
+        setMappingFields(fieldOptions);
+
+        const detected = detectMapping(fields, result.data);
         if (!detected) {
           setStatus("mapping");
           try {
@@ -195,13 +352,13 @@ export default function UploadsPage() {
               body: JSON.stringify({ fields, samples: result.data.slice(0, 10) }),
             });
             const json = await res.json();
-            const mappingData = json?.data;
-            if (
-              mappingData?.dateKey &&
-              mappingData?.descriptionKey &&
-              mappingData?.amountKey &&
-              (mappingData?.confidence ?? 0) >= 0.5
-            ) {
+                const mappingData = json?.data;
+                if (
+                  mappingData?.dateKey &&
+                  mappingData?.descriptionKey &&
+                  mappingData?.amountKey &&
+                  (mappingData?.confidence ?? 0) >= 0.5
+                ) {
               setMapping(mappingData);
               setStatus("creating");
               setTimeout(() => finalizeImport(mappingData, result.data), 400);
@@ -211,8 +368,8 @@ export default function UploadsPage() {
             // fallback to manual mapping
           }
 
-          setMappingOpen(true);
-          return;
+              setMappingOpen(true);
+              return;
         }
 
         setMapping(detected);
@@ -234,16 +391,36 @@ export default function UploadsPage() {
     const parsed = rows
       .map((row) => {
         const rawAmount = row[map.amountKey] ?? "0";
-        const amount = parseCurrency(rawAmount);
-        const date = row[map.dateKey];
+        const fallbackAmount = row["weiteredetails"] ?? "";
+        const amountValue = parseCurrency(rawAmount);
+        const amount =
+          map.amountKey === "betrag" && Math.abs(amountValue) >= 1000 && fallbackAmount
+            ? parseCurrency(fallbackAmount)
+            : amountValue;
+        const dateRaw = row[map.dateKey];
+        const parsedDate = parseDateValue(dateRaw ?? "");
         const description = row[map.descriptionKey];
-        if (!date || !description) return null;
+        if (!parsedDate || !description) return null;
+        const sourceMeta = {
+          source: row.fonte ?? row.source ?? null,
+          payment_type: row.paymenttype ?? null,
+          status: row.status ?? null,
+          key: row.keymm ?? row.keyamex ?? null,
+          key_desc: row.keymmdesc ?? row.keyamexdesc ?? null,
+          currency: row.currency ?? null,
+          currency_foreign: row.currency__2 ?? null,
+          amount_foreign: row.amountinforeigncurrency
+            ? parseCurrency(row.amountinforeigncurrency)
+            : null,
+          exchange_rate: row.exchangerate ? parseCurrency(row.exchangerate) : null,
+        };
         return {
           id: crypto.randomUUID(),
           description,
           amount: amount > 0 ? -amount : amount,
-          date: new Date(date).toISOString(),
+          date: parsedDate.toISOString(),
           status: "pending" as const,
+          sourceMeta,
         };
       })
       .filter(Boolean) as Array<{
@@ -328,7 +505,7 @@ export default function UploadsPage() {
         <div>
           <h1 className="text-xl font-semibold md:text-2xl">Uploads</h1>
           <p className="text-sm text-muted-foreground">
-            Importe CSV ou recibos para criar transações.
+            Importe CSV ou prints no celular para criar transações.
           </p>
         </div>
         <Button onClick={startUpload} className="gap-2">
@@ -461,8 +638,8 @@ export default function UploadsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {mappingFields.map((field) => (
-                    <SelectItem key={field} value={field}>
-                      {field}
+                    <SelectItem key={field.key} value={field.key}>
+                      {field.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -476,8 +653,8 @@ export default function UploadsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {mappingFields.map((field) => (
-                    <SelectItem key={field} value={field}>
-                      {field}
+                    <SelectItem key={field.key} value={field.key}>
+                      {field.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -491,8 +668,8 @@ export default function UploadsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {mappingFields.map((field) => (
-                    <SelectItem key={field} value={field}>
-                      {field}
+                    <SelectItem key={field.key} value={field.key}>
+                      {field.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

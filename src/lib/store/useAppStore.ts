@@ -114,6 +114,7 @@ export type Transaction = {
   couple_id?: string;
   source_upload_id?: string;
   uploadId?: string;
+  sourceMeta?: Record<string, string | number | null>;
 };
 
 export type Budget = {
@@ -402,6 +403,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         source: uploadId || item.uploadId || item.source_upload_id ? "csv" : "manual",
         couple_id: coupleId,
         upload_id: uploadId ?? item.uploadId ?? item.source_upload_id ?? null,
+        source_meta: item.sourceMeta ?? null,
       };
     });
 
@@ -409,7 +411,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .from("transactions")
       .insert(payload)
       .select(
-        "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id, upload_id"
+        "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id, upload_id, source_meta"
       );
     if (error) throw error;
 
@@ -425,6 +427,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         couple_id: row.couple_id ?? undefined,
         uploadId: row.upload_id ?? undefined,
         source_upload_id: row.upload_id ?? undefined,
+        sourceMeta: row.source_meta ?? undefined,
       })) ?? [];
 
     set((state) => ({
@@ -699,7 +702,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         supabase
           .from("transactions")
           .select(
-            "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id, upload_id"
+            "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id, upload_id, source_meta"
           )
           .eq("couple_id", coupleId)
           .order("date", { ascending: false }),
@@ -771,6 +774,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             couple_id: row.couple_id ?? undefined,
             uploadId: row.upload_id ?? undefined,
             source_upload_id: row.upload_id ?? undefined,
+            sourceMeta: row.source_meta ?? undefined,
           })) ?? [],
         budgets: budgetRows.map((row) => ({
           categoryId: row.category_id,

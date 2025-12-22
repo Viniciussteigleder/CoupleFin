@@ -93,8 +93,8 @@ export default function DashboardPage() {
         {/* Month Navigation */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Painel Mensal</h2>
-            <p className="text-sm text-muted-foreground">Visão geral das finanças do casal</p>
+          <h2 className="text-2xl font-bold text-foreground">Painel Mensal</h2>
+          <p className="text-sm text-muted-foreground">Clareza financeira para decisões a dois</p>
           </div>
           <div className="flex items-center bg-white dark:bg-card-dark rounded-full shadow-sm p-1 border border-gray-100 dark:border-gray-800">
             <button 

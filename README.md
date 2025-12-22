@@ -1,6 +1,6 @@
-# Couple Budget Coach
+# CasalFin
 
-MVP v0.1 for a couple-focused budgeting coach. Built with Next.js App Router, Tailwind, shadcn/ui, Supabase, and Playwright.
+MVP v0.1 do CasalFin — finanças claras, riqueza a dois. Built with Next.js App Router, Tailwind, shadcn/ui, Supabase, and Playwright.
 
 ## Setup
 
@@ -16,7 +16,6 @@ Create `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
-OPENAI_API_KEY=your-openai-key
 OPENAI_MODEL=gpt-4o-mini
 ```
 
@@ -31,7 +30,6 @@ cp .env.example .env.local
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SITE_URL` (defaults to `http://localhost:3000` if omitted)
-- `OPENAI_API_KEY` (optional, enables AI workflows)
 - `OPENAI_MODEL` (optional, defaults to `gpt-4o-mini`)
 
 Run the app:
@@ -71,7 +69,6 @@ npm run test:e2e
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `NEXT_PUBLIC_SITE_URL`
-   - `OPENAI_API_KEY` (optional)
    - `OPENAI_MODEL` (optional)
 3. Build command: `npm run build`
 4. Output: `.next`

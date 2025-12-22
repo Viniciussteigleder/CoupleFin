@@ -37,8 +37,10 @@ export function Sidebar() {
             <span className="material-symbols-outlined">account_balance_wallet</span>
           </div>
           <div>
-            <h1 className="text-base font-bold leading-tight text-foreground">Couple Budget</h1>
-            <p className="text-xs text-muted-foreground font-medium">Coach Financeiro</p>
+            <h1 className="text-base font-bold leading-tight text-foreground">CasalFin</h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Finanças claras, riqueza a dois
+            </p>
           </div>
         </div>
 

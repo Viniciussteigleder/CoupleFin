@@ -25,8 +25,8 @@ const symbols = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Couple Budget Coach",
-  description: "App financeiro para casais — importe dados, categorize com IA, acompanhe metas juntos.",
+  title: "CasalFin",
+  description: "CasalFin — finanças claras, riqueza a dois.",
 };
 
 export default function RootLayout({

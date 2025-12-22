@@ -12,7 +12,7 @@ export default function ExplicacaoPage() {
     <OnboardingShell
       step={4}
       title="Como funciona"
-      description="Em poucos minutos você entende porque pedimos CSV e recibos."
+      description="Em poucos minutos você entende porque pedimos CSV e prints."
       backHref="/onboarding/budget"
       onNext={() => router.push("/onboarding/accounts")}
       nextLabel="Continuar"

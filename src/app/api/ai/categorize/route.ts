@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { aiPrompts } from "@/lib/ai/prompts";
 import { callOpenAI } from "@/lib/ai/openai";
+import { categoryRules, normalizeText } from "@/lib/ai/categoryRules";
 
-const keywordMap: Record<string, string> = {
+const fallbackKeywordMap: Record<string, string> = {
   mercado: "Mercado",
   supermercado: "Mercado",
   grocery: "Mercado",
@@ -41,11 +42,30 @@ export async function POST(request: Request) {
   }
 
   const assignments = rows.map((row, index) => {
-    const description = row.description.toLowerCase();
-    const match = Object.keys(keywordMap).find((key) => description.includes(key));
-    const targetName = match ? keywordMap[match] : null;
+    const description = normalizeText(row.description);
+
+    const matchedRule = categoryRules.find((rule) =>
+      rule.keywords.some((keyword) => description.includes(normalizeText(keyword)))
+    );
+
+    if (matchedRule) {
+      const category = categories.find(
+        (cat) => normalizeText(cat.name) === normalizeText(matchedRule.categoryI)
+      );
+      return {
+        index,
+        categoryId: category?.id ?? null,
+        confidence: category ? 0.7 : 0.3,
+        rationale: `rule:${matchedRule.categoryI}/${matchedRule.categoryII}`,
+        categoryName: matchedRule.categoryI,
+        subcategoryName: matchedRule.categoryII,
+      };
+    }
+
+    const match = Object.keys(fallbackKeywordMap).find((key) => description.includes(key));
+    const targetName = match ? fallbackKeywordMap[match] : null;
     const category = targetName
-      ? categories.find((cat) => cat.name.toLowerCase() === targetName.toLowerCase())
+      ? categories.find((cat) => normalizeText(cat.name) === normalizeText(targetName))
       : null;
     return {
       index,

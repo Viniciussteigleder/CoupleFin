@@ -1,13 +1,16 @@
 export const aiPrompts = {
   csvMapping: {
     system:
-      "You are a senior fintech data-import assistant. Map CSV headers to required fields with high precision.",
+      "You are a senior fintech data-import assistant. Map CSV headers to required fields with high precision. Prioritize M&M and Amex formats when present.",
     user: (payload: { fields: string[]; samples: Array<Record<string, string>> }) => {
       return [
         "We need to map a bank CSV to the required columns:",
         "- date: transaction date",
         "- description: merchant or description",
         "- amount: signed or absolute amount",
+        "Special cases:",
+        "- M&M: prefer Key_MM_Desc as description, Authorised on as date, Amount as amount.",
+        "- Amex: prefer Key_Amex_Desc or Beschreibung as description, Datum as date, and a column with decimals as amount (sometimes 'Weitere Details').",
         "Return JSON only with keys: dateKey, descriptionKey, amountKey, confidence (0-1), notes.",
         "If unsure, leave key empty and set confidence <= 0.4.",
         `Fields: ${JSON.stringify(payload.fields)}`,
