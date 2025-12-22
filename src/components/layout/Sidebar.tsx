@@ -33,6 +33,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                   isActive
@@ -51,6 +52,7 @@ export function Sidebar() {
       <div className="flex flex-col gap-2">
         <Link
           href={settingsItem.href}
+          aria-current={pathname === settingsItem.href ? "page" : undefined}
           className={cn(
             "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
             pathname === settingsItem.href
