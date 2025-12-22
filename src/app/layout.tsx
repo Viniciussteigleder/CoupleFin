@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Manrope, Material_Symbols_Outlined } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 
@@ -11,6 +11,12 @@ const display = Manrope({
 const body = Manrope({
   subsets: ["latin"],
   variable: "--font-body",
+});
+
+const symbols = Material_Symbols_Outlined({
+  subsets: ["latin"],
+  variable: "--font-symbols",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -25,13 +31,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"
-          rel="stylesheet"
-        />
-      </head>
-      <body className={`${display.variable} ${body.variable} min-h-screen bg-background`}>
+      <body
+        className={`${display.variable} ${body.variable} ${symbols.variable} min-h-screen bg-background`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>
