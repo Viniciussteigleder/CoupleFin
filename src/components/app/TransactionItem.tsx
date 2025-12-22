@@ -28,7 +28,7 @@ export function TransactionItem({
     showCheckbox = false,
 }: TransactionItemProps) {
   return (
-    <div className={cn("flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/40 transition-colors", selected && "bg-muted/50 border-primary/20")}>
+    <div className={cn("flex items-center gap-3 rounded-[20px] bg-white p-3 hover:bg-muted/30 transition-all border border-transparent shadow-sm shadow-black/5", selected && "bg-muted/50 border-primary/20")}>
       {showCheckbox && (
           <Checkbox 
             checked={selected} 

@@ -69,11 +69,10 @@ async function main() {
                  return {
                      couple_id: coupleId,
                      date: row['Date'] || row['Data'] || new Date().toISOString(),
-                     description: row['Description'] || row['Descrição'] || "Sem descrição",
+                     merchant: row['Description'] || row['Descrição'] || "Sem descrição",
                      amount: amount,
                      amount_cf: amount, // Keep both for safety based on existing schema
                      status: 'pending',
-                     source_upload_id: file
                  };
               });
 

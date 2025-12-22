@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Wallet, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { BudgetDonut } from "@/components/dashboard/BudgetDonut";
 
 export default function DashboardPage() {
   const reduceMotion = useReducedMotion();
@@ -61,17 +62,17 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="rounded-2xl">
+        <Card className="rounded-[32px] border-none shadow-sm bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Gasto no mês</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Gasto no mês</CardTitle>
+            <Wallet className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <motion.div
               initial={reduceMotion ? false : { opacity: 0, y: 8 }}
               animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="text-2xl font-bold"
+              className="text-3xl font-bold tracking-tight"
             >
               € {monthExpenses.toFixed(2)}
             </motion.div>
@@ -79,37 +80,44 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl">
+        <Card className="rounded-[32px] border-none shadow-sm bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Duplicatas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Duplicatas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{duplicates}</div>
+            <div className="text-3xl font-bold tracking-tight">{duplicates}</div>
             <p className="mt-1 text-xs text-muted-foreground">
               Compare e resolva para manter a confiança.
             </p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl">
+        <Card className="rounded-[32px] border-none shadow-sm bg-card/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Orçamentos (top)</CardTitle>
+            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Orçamento Geral</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 pt-2">
-            {outBudget.slice(0, 3).map((b) => (
-              <div key={b.categoryId} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium">{b.categoryName}</span>
-                  <span className={b.pct > 90 ? "text-destructive" : "text-muted-foreground"}>
-                      {Math.round(b.pct)}%
-                  </span>
+          <CardContent className="flex flex-col items-center justify-center pt-2">
+            {outBudget.length > 0 ? (
+              <div className="flex flex-col items-center gap-6 w-full">
+                <BudgetDonut 
+                   percentage={outBudget.reduce((acc, b) => acc + b.pct, 0) / outBudget.length} 
+                   label="Utilizado"
+                />
+                <div className="w-full space-y-3">
+                  {outBudget.slice(0, 2).map((b) => (
+                    <div key={b.categoryId} className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                        <span>{b.categoryName}</span>
+                        <span>{Math.round(b.pct)}%</span>
+                      </div>
+                      <Progress value={b.pct} className={cn("h-1", b.pct > 90 ? "bg-destructive/20" : "bg-primary/20")} />
+                    </div>
+                  ))}
                 </div>
-                <Progress value={b.pct} className={cn("h-2", b.pct > 90 && "bg-destructive/20")} />
               </div>
-            ))}
-            {outBudget.length === 0 && (
-                <p className="text-xs text-muted-foreground">Nenhum orçamento definido.</p>
+            ) : (
+                <p className="text-xs text-muted-foreground py-10">Nenhum orçamento definido.</p>
             )}
           </CardContent>
         </Card>

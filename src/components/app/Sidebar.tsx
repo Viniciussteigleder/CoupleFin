@@ -22,8 +22,8 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col border-r bg-card shadow-sm">
-      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+    <div className="flex h-full flex-col border-r bg-white">
+      <div className="flex h-14 items-center px-4 lg:h-[72px] lg:px-6">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <div className="flex -space-x-1.5 translate-y-0.5">
              <div className="h-5 w-5 rounded-full border-2 border-primary bg-primary/20" />
@@ -45,12 +45,12 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-muted/50",
-                  isActive ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground"
+                  "flex items-center gap-3 rounded-[18px] px-3.5 py-3 transition-all hover:bg-muted/50",
+                  isActive ? "bg-primary text-white font-bold shadow-sm shadow-primary/20" : "text-muted-foreground font-medium"
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                 <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-muted-foreground")} />
+                 {item.label}
               </Link>
             );
           })}
@@ -61,21 +61,21 @@ export function Sidebar() {
           <Link
             href="/ritual/weekly"
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-muted/50",
-              pathname.includes("/ritual/weekly") ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground"
+              "flex items-center gap-3 rounded-[18px] px-3.5 py-3 transition-all hover:bg-muted/50",
+              pathname.includes("/ritual/weekly") ? "bg-primary text-white font-bold shadow-sm shadow-primary/20" : "text-muted-foreground font-medium"
             )}
           >
-             <CheckSquare className="h-4 w-4" />
+             <CheckSquare className={cn("h-5 w-5", pathname.includes("/ritual/weekly") ? "text-white" : "text-muted-foreground")} />
              Weekly Check-in
           </Link>
            <Link
             href="/ritual/monthly"
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-muted/50",
-              pathname.includes("/ritual/monthly") ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground"
+              "flex items-center gap-3 rounded-[18px] px-3.5 py-3 transition-all hover:bg-muted/50",
+              pathname.includes("/ritual/monthly") ? "bg-primary text-white font-bold shadow-sm shadow-primary/20" : "text-muted-foreground font-medium"
             )}
           >
-             <CalendarDays className="h-4 w-4" />
+             <CalendarDays className={cn("h-5 w-5", pathname.includes("/ritual/monthly") ? "text-white" : "text-muted-foreground")} />
              Monthly Review
           </Link>
 
