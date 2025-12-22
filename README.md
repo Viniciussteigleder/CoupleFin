@@ -18,6 +18,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+You can also copy `.env.example` and fill in values:
+
+```bash
+cp .env.example .env.local
+```
+
+### Required environment variables
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL` (defaults to `http://localhost:3000` if omitted)
+
 Run the app:
 
 ```bash
@@ -60,14 +72,5 @@ npm run test:e2e
 
 ## Branch flow
 
-Use small feature branches and PRs:
-
-- `feat/auth`
-- `feat/transactions`
-- `feat/import-csv`
-- `feat/confirm-queue`
-- `feat/rules`
-- `feat/ritual`
-- `feat/logs`
-
-Merge to `main` for production deploys; use PR previews for QA.
+Use small feature branches off `dev`, open PRs to `dev`, then PR `dev` into `main`.
+See `PROJECT_BOARD.md` and `BRANCHING_RULES.md` for the full list of branches and rules.
