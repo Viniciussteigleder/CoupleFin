@@ -1,5 +1,4 @@
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/button";
 import { ConfirmQueue } from "@/components/confirm/ConfirmQueue";
 
 export default function ConfirmarPage() {
@@ -8,7 +7,6 @@ export default function ConfirmarPage() {
       <PageHeader
         title="Fila de confirmacao"
         subtitle="Revise transacoes pendentes, categorize e mescle duplicatas."
-        action={<Button variant="secondary">Confirmar todas</Button>}
       />
       <ConfirmQueue />
     </div>

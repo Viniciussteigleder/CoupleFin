@@ -72,6 +72,31 @@ export function ConfirmQueue() {
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
   };
 
+  const handleConfirmAll = async () => {
+    if (!transactions.length) return;
+    setMessage(null);
+    const ids = transactions.map((item) => item.id);
+    setTransactions([]);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("transactions")
+      .update({ status: "confirmed" })
+      .in("id", ids);
+    if (error) {
+      setMessage("Falha ao confirmar todas.");
+      return;
+    }
+    await supabase.from("transaction_events").insert(
+      ids.map((id) => ({
+        type: "transaction_confirmed",
+        entity_id: id,
+        payload_json: { id },
+      }))
+    );
+    await refetch();
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+  };
+
   const handleCategorize = async (id: string, categoryName: string) => {
     setMessage(null);
     const category = categories.find((item) => item.name === categoryName);
@@ -144,7 +169,17 @@ export function ConfirmQueue() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Transacoes pendentes</CardTitle>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <CardTitle>Transacoes pendentes</CardTitle>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleConfirmAll}
+              disabled={isLoading || !transactions.length}
+            >
+              Confirmar todas
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
