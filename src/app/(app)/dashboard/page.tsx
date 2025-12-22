@@ -29,7 +29,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>2 transacoes aguardando confirmacao.</p>
-            <p>Nova regra sugerida para "Mercado".</p>
+            <p>Nova regra sugerida para &quot;Mercado&quot;.</p>
           </CardContent>
         </Card>
       </section>

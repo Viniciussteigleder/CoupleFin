@@ -33,7 +33,7 @@ export function RuleList() {
             >
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  contains("{rule.keyword}")
+                  {`contains("${rule.keyword}")`}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {rule.apply_past ? "Aplicado retroativo" : "Somente novas"}

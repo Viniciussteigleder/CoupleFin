@@ -143,7 +143,7 @@ export function CsvImport() {
       setRows([]);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["transactions", "pending"] });
-    } catch (err) {
+    } catch {
       setError("Falha ao importar. Verifique o CSV e tente novamente.");
     } finally {
       setLoading(false);

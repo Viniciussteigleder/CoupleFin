@@ -20,7 +20,7 @@ export default function UploadsPage() {
           </CardHeader>
           <CardContent>
             <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-6 text-sm text-muted-foreground">
-              Nenhum upload ainda. Arraste um arquivo ou clique em \"Selecionar CSV\".
+              Nenhum upload ainda. Arraste um arquivo ou clique em &quot;Selecionar CSV&quot;.
             </div>
           </CardContent>
         </Card>
