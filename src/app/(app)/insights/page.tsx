@@ -8,6 +8,7 @@ import {
     CardTitle,
     CardFooter,
   } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Lightbulb, ArrowRight, AlertCircle, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";

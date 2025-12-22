@@ -2,49 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Stitch Design System ===== */
 :root {
-  --background: 210 20% 98%; /* Clean off-white #F9FAFB equivalent */
-  --foreground: 222 47% 11%; /* Slate 950 for text */
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  /* Primary - Mint Green from Stitch */
+  --primary: 160 91% 49%; /* #13eca4 */
+  --primary-foreground: 160 40% 8%;
+  
+  /* Background */
+  --background: 150 13% 97%; /* #f6f8f7 */
+  --foreground: 160 18% 8%; /* #111816 */
+  
+  /* Cards */
+  --card: 0 0% 100%; /* #ffffff */
+  --card-foreground: 160 18% 8%;
+  
+  /* Popover */
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --primary: 153 60% 45%; /* Vibrant Mint Green #10B981 */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 153 60% 95%; /* Light mint tint */
-  --accent-foreground: 153 60% 20%;
+  --popover-foreground: 160 18% 8%;
+  
+  /* Secondary */
+  --secondary: 150 14% 95%;
+  --secondary-foreground: 160 18% 8%;
+  
+  /* Muted - text-muted from Stitch #61897c */
+  --muted: 150 14% 95%;
+  --muted-foreground: 160 20% 46%; /* #61897c */
+  
+  /* Accent */
+  --accent: 160 60% 95%;
+  --accent-foreground: 160 40% 20%;
+  
+  /* Destructive */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 153 60% 50%;
-  --radius: 24px; /* Slightly larger rounding for premium feel */
+  
+  /* Borders & Inputs */
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 160 91% 49%;
+  
+  /* Radius - Stitch uses rounded-2xl (16px) for cards */
+  --radius: 16px;
 }
 
 .dark {
-  --background: 160 36% 10%;
+  /* Dark mode - from Stitch */
+  --background: 160 36% 10%; /* #10221c */
   --foreground: 150 12% 94%;
-  --card: 160 30% 13%;
+  
+  --card: 160 30% 14%; /* #162d25 */
   --card-foreground: 150 12% 94%;
-  --popover: 160 30% 13%;
+  
+  --popover: 160 30% 14%;
   --popover-foreground: 150 12% 94%;
-  --primary: 160 85% 50%;
-  --primary-foreground: 160 40% 12%;
+  
+  --primary: 160 91% 49%;
+  --primary-foreground: 160 40% 8%;
+  
   --secondary: 160 26% 18%;
   --secondary-foreground: 150 12% 94%;
+  
   --muted: 160 26% 18%;
   --muted-foreground: 150 10% 70%;
+  
   --accent: 160 30% 22%;
   --accent-foreground: 150 12% 94%;
+  
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
+  
   --border: 160 24% 20%;
   --input: 160 24% 20%;
-  --ring: 160 85% 50%;
+  --ring: 160 91% 49%;
 }
 
 * {
@@ -53,6 +82,7 @@
 
 body {
   @apply bg-background font-body text-foreground antialiased;
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
 h1,
@@ -61,14 +91,52 @@ h3,
 h4,
 h5,
 h6 {
-  @apply font-display;
+  @apply font-display tracking-tight;
 }
 
+/* Material Symbols - from Stitch */
 .material-symbols-outlined {
   font-family: var(--font-symbols);
   font-variation-settings:
-    "FILL" 1,
-    "wght" 500,
+    "FILL" 0,
+    "wght" 400,
     "GRAD" 0,
     "opsz" 24;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+/* Custom scrollbar from Stitch */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

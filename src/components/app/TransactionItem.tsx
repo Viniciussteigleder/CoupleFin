@@ -2,6 +2,7 @@
 
 import { Transaction, Category, Account } from "@/lib/store/useAppStore";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/formatCurrency";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -47,8 +48,7 @@ export function TransactionItem({
          <div className="flex items-center justify-between">
             <p className="truncate font-medium text-sm">{transaction.description}</p>
             <p className={cn("font-semibold text-sm", transaction.amount < 0 ? "text-foreground" : "text-green-600")}>
-                {transaction.amount < 0 ? "- " : "+ "}
-                € {Math.abs(transaction.amount).toFixed(2)}
+                {transaction.amount < 0 ? "- " : "+ "}{formatCurrency(Math.abs(transaction.amount))}
             </p>
          </div>
          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">

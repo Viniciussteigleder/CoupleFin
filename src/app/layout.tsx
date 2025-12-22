@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Manrope, Noto_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 import { MotionProvider } from "@/components/app/MotionProvider";
+import { Toaster } from "@/components/ui/toaster";
 
 const display = Manrope({
   subsets: ["latin"],
   variable: "--font-display",
+  display: "swap",
 });
 
-const body = Manrope({
+const body = Noto_Sans({
   subsets: ["latin"],
   variable: "--font-body",
+  display: "swap",
 });
 
 const symbols = localFont({
@@ -23,10 +26,8 @@ const symbols = localFont({
 
 export const metadata: Metadata = {
   title: "Couple Budget Coach",
-  description: "Couple Budget Coach MVP",
+  description: "App financeiro para casais — importe dados, categorize com IA, acompanhe metas juntos.",
 };
-
-import { Toaster } from "@/components/ui/toaster";
 
 export default function RootLayout({
   children,
@@ -34,9 +35,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${display.variable} ${body.variable} ${symbols.variable} min-h-screen bg-background`}
+        className={`${display.variable} ${body.variable} ${symbols.variable} min-h-screen bg-background font-body antialiased`}
       >
         <Providers>
           <MotionProvider />

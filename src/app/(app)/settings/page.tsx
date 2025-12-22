@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
-import { Globe, MapPin, Coins, Calendar } from "lucide-react";
+import { Globe, Coins } from "lucide-react";
 
 export default function SettingsPage() {
   const { toast } = useToast();

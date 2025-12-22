@@ -1,127 +1,183 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useAppStore } from "@/lib/store/useAppStore";
-import { cn } from "@/lib/utils";
 import { useEffect } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { Wallet, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { BudgetDonut } from "@/components/dashboard/BudgetDonut";
+import { useRouter } from "next/navigation";
+
+// New Stitch-style components
+import { ProjectionCard } from "@/components/dashboard/ProjectionCard";
+import { CommitmentsCard } from "@/components/dashboard/CommitmentsCard";
+import { CategorySpending } from "@/components/dashboard/CategorySpending";
+import { InsightCard } from "@/components/dashboard/InsightCard";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
 
 export default function DashboardPage() {
-  const reduceMotion = useReducedMotion();
-  const { categories, budgets, transactions, hydrateFromSeed } = useAppStore();
+  const router = useRouter();
+  const { categories, transactions, hydrateFromSeed } = useAppStore();
+  const currentMonth = "Dezembro 2024";
 
   useEffect(() => {
     (async () => {
-      // If store is empty/fresh, load seed.
       if (categories.length === 0) {
         try {
-            const res = await fetch("/api/seed");
-            const json = await res.json();
-            if (json.ok && json.data) {
-                hydrateFromSeed(json.data);
-            }
+          const res = await fetch("/api/seed");
+          const json = await res.json();
+          if (json.ok && json.data) {
+            hydrateFromSeed(json.data);
+          }
         } catch (e) {
-            console.error("Failed to seed", e);
+          console.error("Failed to seed", e);
         }
       }
     })();
   }, [categories.length, hydrateFromSeed]);
 
+  // Calculate dashboard metrics
   const monthExpenses = transactions
     .filter((t) => t.amount < 0 && t.status !== "archived")
     .reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
-  const pending = transactions.filter((t) => t.status === "pending").length;
-  const duplicates = transactions.filter((t) => t.status === "duplicate").length;
+  const monthIncome = transactions
+    .filter((t) => t.amount > 0 && t.status !== "archived")
+    .reduce((acc, t) => acc + t.amount, 0);
 
-  const outBudget = budgets.map((b) => {
-    const categoryName = categories.find(c => c.id === b.categoryId)?.name || b.categoryId;
+  const projectedBalance = monthIncome - monthExpenses;
+
+  // Category spending breakdown
+  const categoryTotals = categories.slice(0, 4).map((cat) => {
     const spent = transactions
-      .filter((t) => t.amount < 0 && t.categoryId === b.categoryId && t.status !== "archived")
+      .filter((t) => t.amount < 0 && t.categoryId === cat.id && t.status !== "archived")
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
-    return { ...b, categoryName, spent, pct: Math.min(100, (spent / Math.max(1, b.monthlyLimit)) * 100) };
-  }).sort((a, b) => b.pct - a.pct);
+    const total = monthExpenses || 1;
+    return {
+      name: cat.name,
+      icon: getCategoryIcon(cat.name),
+      spent,
+      percentage: Math.round((spent / total) * 100),
+      color: getCategoryColor(cat.name),
+    };
+  }).filter(c => c.percentage > 0);
+
+  // Recent transactions
+  const recentTxs = transactions
+    .filter((t) => t.status !== "archived")
+    .slice(0, 5)
+    .map((t) => ({
+      id: t.id,
+      merchant: t.description,
+      date: formatRelativeDate(t.date),
+      amount: t.amount,
+      icon: t.amount < 0 ? "shopping_cart" : "payments",
+      type: (t.amount < 0 ? "expense" : "income") as "income" | "expense",
+    }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold md:text-2xl">Painel Mensal</h1>
-          <p className="text-sm text-muted-foreground">
-            Um resumo rápido do mês + o que precisa de atenção.
-          </p>
-        </div>
-        <Badge variant={pending ? "destructive" : "secondary"} className="gap-2 h-8 px-3">
-          {pending ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-          {pending ? `${pending} pendências` : "Tudo em dia"}
-        </Badge>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="rounded-[32px] border-none shadow-sm bg-card/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Gasto no mês</CardTitle>
-            <Wallet className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="text-3xl font-bold tracking-tight"
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth">
+      <div className="max-w-6xl mx-auto flex flex-col gap-8 pb-20">
+        {/* Month Navigation */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Painel Mensal</h2>
+            <p className="text-sm text-muted-foreground">Visão geral das finanças do casal</p>
+          </div>
+          <div className="flex items-center bg-white dark:bg-card-dark rounded-full shadow-sm p-1 border border-gray-100 dark:border-gray-800">
+            <button 
+              className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full text-muted-foreground transition-colors"
+              onClick={() => {/* prev month */}}
             >
-              € {monthExpenses.toFixed(2)}
-            </motion.div>
-            <p className="mt-1 text-xs text-muted-foreground">Inclui confirmadas + pendentes.</p>
-          </CardContent>
-        </Card>
+              <span className="material-symbols-outlined">chevron_left</span>
+            </button>
+            <div className="flex items-center gap-2 px-6">
+              <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
+              <span className="text-lg font-bold text-foreground min-w-[140px] text-center">{currentMonth}</span>
+            </div>
+            <button 
+              className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full text-muted-foreground transition-colors"
+              onClick={() => {/* next month */}}
+            >
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
 
-        <Card className="rounded-[32px] border-none shadow-sm bg-card/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Duplicatas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold tracking-tight">{duplicates}</div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Compare e resolva para manter a confiança.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Hero Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ProjectionCard
+            projectedBalance={projectedBalance}
+            expectedIncome={monthIncome}
+            expectedExpenses={monthExpenses}
+          />
+          <CommitmentsCard
+            totalRemaining={1200}
+            totalCommitted={3500}
+            upcomingCount={3}
+            daysAhead={7}
+          />
+        </div>
 
-        <Card className="rounded-[32px] border-none shadow-sm bg-card/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Orçamento Geral</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center pt-2">
-            {outBudget.length > 0 ? (
-              <div className="flex flex-col items-center gap-6 w-full">
-                <BudgetDonut 
-                   percentage={outBudget.reduce((acc, b) => acc + b.pct, 0) / outBudget.length} 
-                   label="Utilizado"
-                />
-                <div className="w-full space-y-3">
-                  {outBudget.slice(0, 2).map((b) => (
-                    <div key={b.categoryId} className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                        <span>{b.categoryName}</span>
-                        <span>{Math.round(b.pct)}%</span>
-                      </div>
-                      <Progress value={b.pct} className={cn("h-1", b.pct > 90 ? "bg-destructive/20" : "bg-primary/20")} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-                <p className="text-xs text-muted-foreground py-10">Nenhum orçamento definido.</p>
-            )}
-          </CardContent>
-        </Card>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Categories */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <CategorySpending 
+              categories={categoryTotals}
+              total={monthExpenses}
+            />
+          </div>
+
+          {/* Right Column: Insights & Activity */}
+          <div className="flex flex-col gap-6">
+            <InsightCard
+              title="Insight Semanal"
+              message="Vocês economizaram 15% em delivery comparado à semana passada. 👏"
+              onViewDetails={() => router.push("/insights")}
+            />
+            <RecentActivity
+              transactions={recentTxs}
+              onViewAll={() => router.push("/transactions")}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
+}
+
+// Helper functions
+function getCategoryIcon(name: string): string {
+  const icons: Record<string, string> = {
+    "Alimentação": "restaurant",
+    "Moradia": "home",
+    "Transporte": "directions_car",
+    "Lazer": "sports_esports",
+    "Saúde": "health_and_safety",
+    "Educação": "school",
+    "Compras": "shopping_bag",
+    "Assinaturas": "subscriptions",
+  };
+  return icons[name] || "category";
+}
+
+function getCategoryColor(name: string): string {
+  const colors: Record<string, string> = {
+    "Alimentação": "orange",
+    "Moradia": "blue",
+    "Transporte": "purple",
+    "Lazer": "green",
+    "Saúde": "red",
+    "Educação": "blue",
+    "Compras": "orange",
+    "Assinaturas": "purple",
+  };
+  return colors[name] || "blue";
+}
+
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return `Hoje, ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  if (diffDays === 1) return `Ontem, ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
