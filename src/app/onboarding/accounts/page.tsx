@@ -60,10 +60,10 @@ export default function AccountsPage() {
 
   return (
     <OnboardingShell
-      step={4}
-      title="Contas e Cartões"
-      description="Quais contas vocês usam para os gastos do dia a dia?"
-      backHref="/onboarding/budget"
+      step={5}
+      title="Cartões detectados"
+      description="Identificamos automaticamente nas importações. Revise se quiser."
+      backHref="/onboarding/explicacao"
       onNext={handleNext}
       nextLabel={localAccounts.length === 0 ? "Pular por enquanto" : "Continuar"}
     >
@@ -71,11 +71,11 @@ export default function AccountsPage() {
         <div className="flex gap-2">
             <Button variant="outline" className="flex-1 gap-2 border-dashed h-20 flex-col py-2" onClick={() => setIsDialogOpen(true)}>
                 <Plus className="h-5 w-5" />
-                <span>Manual</span>
+                <span>Adicionar manual</span>
             </Button>
-            <Button variant="outline" className="flex-1 gap-2 border-dashed h-20 flex-col py-2" onClick={() => alert("Funcionalidade de OCR de cartão em breve!")}>
+            <Button variant="outline" className="flex-1 gap-2 border-dashed h-20 flex-col py-2" onClick={() => alert("Detectaremos automaticamente ao importar seus extratos.")}>
                 <CreditCard className="h-5 w-5" />
-                <span>Foto do Cartão</span>
+                <span>Detecção automática</span>
             </Button>
         </div>
 
@@ -111,7 +111,7 @@ export default function AccountsPage() {
         {!isDialogOpen && localAccounts.length === 0 && (
             <div className="py-4 text-center">
                 <p className="text-xs text-muted-foreground">
-                    Você pode pular esta etapa. As contas serão identificadas automaticamente ao subir seus extratos ou recibos.
+                    Você pode pular. As contas serão identificadas ao subir seus extratos.
                 </p>
             </div>
         )}

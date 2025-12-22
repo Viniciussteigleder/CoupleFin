@@ -1,4 +1,13 @@
-import type { Account, Budget, Category, Goal, Transaction } from "@/lib/store/useAppStore";
+import type {
+  Account,
+  Budget,
+  Category,
+  Goal,
+  Transaction,
+  Rule,
+  AuditLog,
+  UploadItem,
+} from "@/lib/store/useAppStore";
 
 export function buildSeed() {
   const categories: Category[] = [
@@ -84,5 +93,46 @@ export function buildSeed() {
 
   const goals: Goal[] = [{ id: "g1", name: "Viagem Fim de Ano", target: 6000, current: 1450 }];
 
-  return { categories, accounts, budgets, transactions, goals };
+  const rules: Rule[] = [
+    {
+      id: "rule_1",
+      pattern: "uber",
+      categoryId: "cat_trans",
+      applyPast: true,
+      priority: "high",
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  const auditLogs: AuditLog[] = [
+    {
+      id: "log_1",
+      actor: "Ana",
+      action: "Importou CSV",
+      entity: "uploads",
+      details: "23 transações pendentes",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "log_2",
+      actor: "João",
+      action: "Criou regra",
+      entity: "rules",
+      details: "Uber → Transporte",
+      createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+    },
+  ];
+
+  const uploads: UploadItem[] = [
+    {
+      id: "upload_seed",
+      fileName: "extrato_dezembro.csv",
+      type: "csv",
+      status: "done",
+      createdAt: new Date().toISOString(),
+      stats: { created: 23, duplicates: 2, review: 4 },
+    },
+  ];
+
+  return { categories, accounts, budgets, transactions, goals, rules, auditLogs, uploads };
 }

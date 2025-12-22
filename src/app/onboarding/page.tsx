@@ -9,7 +9,7 @@ export default function WelcomePage() {
   return (
     <OnboardingShell
       step={1}
-      totalSteps={5}
+      totalSteps={7}
       title="Bem-vindos"
       description="Vamos configurar o Couple Budget Coach para vocês em poucos minutos."
       onNext={() => router.push("/onboarding/categories")}
@@ -22,8 +22,10 @@ export default function WelcomePage() {
          <ul className="text-sm text-foreground/80 space-y-2 text-left list-disc list-inside bg-muted/30 p-4 rounded-lg">
             <li>Definir categorias de gastos</li>
             <li>Configurar orçamentos mensais</li>
-            <li>Adicionar contas e cartões</li>
+            <li>Entender como a importação funciona</li>
+            <li>Revisar cartões detectados</li>
             <li>Estabelecer o ritual do casal</li>
+            <li>Confirmar privacidade</li>
          </ul>
       </div>
     </OnboardingShell>

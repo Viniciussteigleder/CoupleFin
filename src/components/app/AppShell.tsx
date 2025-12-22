@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/app/Sidebar";
 import { Topbar } from "@/components/app/Topbar";
+import { BottomNav } from "@/components/app/BottomNav";
 
 // 
 
@@ -15,11 +16,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex flex-col">
             <Topbar />
-            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+            <main className="flex flex-1 flex-col gap-4 p-4 pb-24 lg:gap-6 lg:p-6">
               {children}
             </main>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

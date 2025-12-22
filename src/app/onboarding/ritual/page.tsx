@@ -1,76 +1,101 @@
 "use client";
 
-import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
-import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from "@/components/ui/select";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAppStore } from "@/lib/store/useAppStore";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function RitualPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { updateRitualPreferences } = useAppStore();
   const [weeklyDay, setWeeklyDay] = useState("sunday");
-  
-  const handleFinish = async () => {
-    // Determine user preference for ritual day
-    // In MVP just mock saving this setting to user preferences or local storage/store
-    // For now we just finish.
+  const [weeklyTime, setWeeklyTime] = useState("20:00");
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
 
-    toast({
-        title: "Tudo pronto!",
-        description: "Seu espaço está configurado. Vamos importar as primeiras transações.",
+  const handleFinish = async () => {
+    updateRitualPreferences({
+      weeklyDay,
+      weeklyTime,
+      remindersEnabled,
     });
 
-    // Simulate small delay for UX
-    await new Promise(r => setTimeout(r, 800));
-    router.push("/dashboard");
+    toast({
+      title: "Preferências salvas",
+      description: "Você pode ajustar no app quando quiser.",
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    router.push("/onboarding/privacidade");
   };
 
   return (
     <OnboardingShell
-      step={5}
+      step={6}
       title="Ritual do Casal"
-      description="Reserve um momento sagrado na semana para alinhar as finanças sem briga."
+      description="Defina um hábito semanal de 10 minutos."
       backHref="/onboarding/accounts"
       onNext={handleFinish}
-      nextLabel="Finalizar e ir para o App"
+      nextLabel="Continuar"
     >
       <div className="space-y-6">
-         <div className="space-y-3">
-            <Label className="text-base">Qual o melhor dia para o Checkout Semanal?</Label>
-            <p className="text-sm text-muted-foreground">
-                Um encontro de 10-15 minutos para categorizar pendências e ver como foi a semana.
-            </p>
-            
-            <Select value={weeklyDay} onValueChange={setWeeklyDay}>
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="friday">Sexta-feira (fechar a semana)</SelectItem>
-                    <SelectItem value="saturday">Sábado (manhã tranquila)</SelectItem>
-                    <SelectItem value="sunday">Domingo (planejar a próxima)</SelectItem>
-                    <SelectItem value="monday">Segunda-feira (começar com tudo)</SelectItem>
-                </SelectContent>
-            </Select>
-         </div>
+        <div className="space-y-3">
+          <Label className="text-base">Qual o melhor dia para o ritual semanal?</Label>
+          <Select value={weeklyDay} onValueChange={setWeeklyDay}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="friday">Sexta-feira</SelectItem>
+              <SelectItem value="saturday">Sábado</SelectItem>
+              <SelectItem value="sunday">Domingo</SelectItem>
+              <SelectItem value="monday">Segunda-feira</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-         <div className="rounded-lg bg-secondary/50 p-4 border border-secondary text-sm">
-             <p className="font-medium text-foreground">Como funciona:</p>
-             <ul className="mt-2 list-disc pl-4 space-y-1 text-muted-foreground">
-                 <li>Nós lembramos vocês no dia escolhido.</li>
-                 <li>Vocês abrem o app juntos (ou sincronizados).</li>
-                 <li>Revisam as pendências da semana.</li>
-                 <li>Celebram as pequenas vitórias!</li>
-             </ul>
-         </div>
+        <div className="space-y-3">
+          <Label className="text-base">Horário sugerido</Label>
+          <Select value={weeklyTime} onValueChange={setWeeklyTime}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="18:00">18:00</SelectItem>
+              <SelectItem value="19:00">19:00</SelectItem>
+              <SelectItem value="20:00">20:00</SelectItem>
+              <SelectItem value="21:00">21:00</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Ativar lembretes</p>
+            <p className="text-xs text-muted-foreground">Email ou push conforme disponível.</p>
+          </div>
+          <Switch checked={remindersEnabled} onCheckedChange={setRemindersEnabled} />
+        </div>
+
+        <div className="rounded-lg border border-secondary bg-secondary/50 p-4 text-sm">
+          <p className="font-medium text-foreground">Como funciona:</p>
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-muted-foreground">
+            <li>O app prepara as pendências e duplicatas.</li>
+            <li>Vocês resolvem em 10 minutos.</li>
+            <li>Saem com um combinado para a semana.</li>
+          </ul>
+        </div>
       </div>
     </OnboardingShell>
   );
