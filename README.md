@@ -16,6 +16,8 @@ Create `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+OPENAI_API_KEY=your-openai-key
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 You can also copy `.env.example` and fill in values:
@@ -29,6 +31,8 @@ cp .env.example .env.local
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SITE_URL` (defaults to `http://localhost:3000` if omitted)
+- `OPENAI_API_KEY` (optional, enables AI workflows)
+- `OPENAI_MODEL` (optional, defaults to `gpt-4o-mini`)
 
 Run the app:
 
@@ -67,6 +71,8 @@ npm run test:e2e
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `NEXT_PUBLIC_SITE_URL`
+   - `OPENAI_API_KEY` (optional)
+   - `OPENAI_MODEL` (optional)
 3. Build command: `npm run build`
 4. Output: `.next`
 
@@ -74,3 +80,7 @@ npm run test:e2e
 
 Use small feature branches off `dev`, open PRs to `dev`, then PR `dev` into `main`.
 See `PROJECT_BOARD.md` and `BRANCHING_RULES.md` for the full list of branches and rules.
+
+## Auth + AI Docs
+
+- `AUTH_SETUP.md` (Google OAuth / Gmail setup via Supabase)\n- `AI_WORKFLOWS.md` (where AI is used and prompt locations)

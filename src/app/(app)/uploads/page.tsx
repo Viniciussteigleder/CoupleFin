@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import { useRouter } from "next/navigation";
 import { Camera, FileText, Plus, Upload } from "lucide-react";
@@ -43,6 +43,13 @@ export default function UploadsPage() {
   const { categories, accounts, addTransactions, addUpload, uploads } = useAppStore();
   const [activeTab, setActiveTab] = useState<"csv" | "ocr">("csv");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [ocrInitial, setOcrInitial] = useState({
+    description: "",
+    amount: 0,
+    date: new Date().toISOString(),
+  });
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const ocrInputRef = useRef<HTMLInputElement | null>(null);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [mappingFields, setMappingFields] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Mapping>({
@@ -52,12 +59,6 @@ export default function UploadsPage() {
   });
   const [parsedRows, setParsedRows] = useState<CsvRow[]>([]);
   const [status, setStatus] = useState<"idle" | "reading" | "mapping" | "creating" | "done">("idle");
-
-  const emptyReceipt = {
-    description: "",
-    amount: 0,
-    date: new Date().toISOString(),
-  };
 
   const steps = useMemo(
     () => [
@@ -73,7 +74,46 @@ export default function UploadsPage() {
 
   const startUpload = () => {
     toast({ title: "Enviando arquivo...", duration: 1500 });
+    if (activeTab === "ocr") {
+      ocrInputRef.current?.click();
+      return;
+    }
     setTimeout(() => setIsReviewOpen(true), 1200);
+  };
+
+  const handleOcrFile = async (file: File) => {
+    setOcrLoading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Falha ao ler imagem"));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch("/api/ai/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: dataUrl }),
+      });
+      const json = await res.json();
+      const data = json?.data ?? {};
+
+      setOcrInitial({
+        description: data.description || data.merchant || "",
+        amount: data.amount ? Number(data.amount) * -1 : 0,
+        date: data.date ? new Date(data.date).toISOString() : new Date().toISOString(),
+      });
+    } catch {
+      setOcrInitial({
+        description: "",
+        amount: 0,
+        date: new Date().toISOString(),
+      });
+    } finally {
+      setOcrLoading(false);
+      setIsReviewOpen(true);
+    }
   };
 
   const handleConfirmOcr = async (data: {
@@ -140,7 +180,7 @@ export default function UploadsPage() {
       header: true,
       skipEmptyLines: true,
       transformHeader: (header) => header.toLowerCase().replace(/\s+/g, "").replace(/_/g, ""),
-      complete: (result) => {
+      complete: async (result) => {
         const fields = result.meta.fields ?? [];
         setMappingFields(fields);
         setParsedRows(result.data);
@@ -148,6 +188,29 @@ export default function UploadsPage() {
         const detected = detectMapping(fields);
         if (!detected) {
           setStatus("mapping");
+          try {
+            const res = await fetch("/api/ai/csv-mapping", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fields, samples: result.data.slice(0, 10) }),
+            });
+            const json = await res.json();
+            const mappingData = json?.data;
+            if (
+              mappingData?.dateKey &&
+              mappingData?.descriptionKey &&
+              mappingData?.amountKey &&
+              (mappingData?.confidence ?? 0) >= 0.5
+            ) {
+              setMapping(mappingData);
+              setStatus("creating");
+              setTimeout(() => finalizeImport(mappingData, result.data), 400);
+              return;
+            }
+          } catch {
+            // fallback to manual mapping
+          }
+
           setMappingOpen(true);
           return;
         }
@@ -200,6 +263,36 @@ export default function UploadsPage() {
       return;
     }
 
+    let enriched = parsed;
+
+    if (categories.length) {
+      try {
+        const res = await fetch("/api/ai/categorize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            categories: categories.map((cat) => ({ id: cat.id, name: cat.name })),
+            rows: parsed.map((row) => ({
+              description: row.description,
+              amount: row.amount,
+              date: row.date,
+            })),
+          }),
+        });
+        const json = await res.json();
+        const assignments = json?.data?.assignments ?? [];
+        enriched = parsed.map((row, index) => {
+          const assignment = assignments.find((item: { index: number }) => item.index === index);
+          if (assignment?.categoryId) {
+            return { ...row, categoryId: assignment.categoryId };
+          }
+          return row;
+        });
+      } catch {
+        // ignore AI failures
+      }
+    }
+
     try {
       const uploadId = await addUpload({
         id: crypto.randomUUID(),
@@ -207,10 +300,10 @@ export default function UploadsPage() {
         type: "csv",
         status: "done",
         createdAt: new Date().toISOString(),
-        stats: { created: parsed.length, duplicates: 0, review: 0 },
+        stats: { created: enriched.length, duplicates: 0, review: 0 },
       });
 
-      await addTransactions(parsed, uploadId ?? undefined);
+      await addTransactions(enriched, uploadId ?? undefined);
     } catch {
       setStatus("idle");
       toast({
@@ -295,7 +388,7 @@ export default function UploadsPage() {
           </div>
           <h3 className="font-semibold">Foto de Recibo</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Nós lemos os dados para você (OCR)
+            {ocrLoading ? "Processando OCR..." : "Nós lemos os dados para você (OCR)"}
           </p>
         </Card>
       )}
@@ -331,12 +424,23 @@ export default function UploadsPage() {
         ))}
       </div>
 
+      <input
+        ref={ocrInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) handleOcrFile(file);
+        }}
+      />
+
       <OcrReviewDialog
         open={isReviewOpen}
         onOpenChange={setIsReviewOpen}
         categories={categories}
         accounts={accounts}
-        initial={emptyReceipt}
+        initial={ocrInitial}
         onConfirm={handleConfirmOcr}
       />
 
