@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, CreditCard, Wallet, Banknote } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -25,7 +25,7 @@ import {
 
 export default function AccountsPage() {
   const router = useRouter();
-  const { accounts, hydrateFromSeed } = useAppStore();
+  const { accounts, setAccounts } = useAppStore();
   const [localAccounts, setLocalAccounts] = useState<Account[]>(accounts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -33,6 +33,10 @@ export default function AccountsPage() {
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"credit" | "debit" | "cash">("credit");
   const [newLast4, setNewLast4] = useState("");
+
+  useEffect(() => {
+    setLocalAccounts(accounts);
+  }, [accounts]);
 
   const addAccount = () => {
     if (!newName) return;
@@ -53,8 +57,8 @@ export default function AccountsPage() {
     setLocalAccounts(localAccounts.filter((a) => a.id !== id));
   };
 
-  const handleNext = () => {
-    hydrateFromSeed({ accounts: localAccounts });
+  const handleNext = async () => {
+    await setAccounts(localAccounts);
     router.push("/onboarding/ritual");
   };
 

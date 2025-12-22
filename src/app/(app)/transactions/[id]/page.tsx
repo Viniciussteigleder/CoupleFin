@@ -24,6 +24,11 @@ export default function TransactionDetailPage() {
 
   const category = categories.find((c) => c.id === transaction.categoryId);
   const account = accounts.find((a) => a.id === transaction.accountId);
+  const related = transactions.filter(
+    (t) =>
+      t.id !== transaction.id &&
+      t.description.toLowerCase() === transaction.description.toLowerCase()
+  );
 
   return (
     <div className="space-y-6">
@@ -55,7 +60,7 @@ export default function TransactionDetailPage() {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Origem</span>
               <span className="font-semibold text-foreground">
-                {transaction.source_upload_id ? "Importação" : "Manual"}
+                {transaction.uploadId || transaction.source_upload_id ? "Importação" : "Manual"}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -76,7 +81,9 @@ export default function TransactionDetailPage() {
           <Card className="rounded-2xl border-border/60 p-6">
             <p className="text-sm font-semibold">Evidências</p>
             <p className="mt-2 text-xs text-muted-foreground">
-              CSV: linha 42 • Confiança alta
+              {transaction.uploadId || transaction.source_upload_id
+                ? `Upload: ${(transaction.uploadId || transaction.source_upload_id) ?? ""}`
+                : "Sem evidências anexadas."}
             </p>
             <div className="mt-4 rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
               Prévia do recibo ou linha do CSV.
@@ -85,7 +92,7 @@ export default function TransactionDetailPage() {
           <Card className="rounded-2xl border-border/60 p-6">
             <p className="text-sm font-semibold">Transações semelhantes</p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Encontramos 2 registros similares neste mês.
+              Encontramos {related.length} registro(s) similares.
             </p>
             <Button variant="outline" className="mt-4">
               Aplicar categoria em lote

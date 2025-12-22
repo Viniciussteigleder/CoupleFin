@@ -53,9 +53,9 @@ export default function UploadsPage() {
   const [parsedRows, setParsedRows] = useState<CsvRow[]>([]);
   const [status, setStatus] = useState<"idle" | "reading" | "mapping" | "creating" | "done">("idle");
 
-  const mockReceipt = {
-    description: "Restaurante Exemplo",
-    amount: -85.5,
+  const emptyReceipt = {
+    description: "",
+    amount: 0,
     date: new Date().toISOString(),
   };
 
@@ -76,33 +76,43 @@ export default function UploadsPage() {
     setTimeout(() => setIsReviewOpen(true), 1200);
   };
 
-  const handleConfirmOcr = (data: {
+  const handleConfirmOcr = async (data: {
     description: string;
     amount: number;
     date: string;
     categoryId?: string;
     accountId?: string;
   }) => {
-    const newTx = {
-      id: crypto.randomUUID(),
-      description: data.description,
-      amount: data.amount,
-      date: data.date,
-      categoryId: data.categoryId,
-      accountId: data.accountId,
-      status: "pending" as const,
-      source_upload_id: `upload_${Date.now()}`,
-    };
+    try {
+      const uploadId = await addUpload({
+        id: crypto.randomUUID(),
+        fileName: "recibo.jpg",
+        type: "ocr",
+        status: "done",
+        createdAt: new Date().toISOString(),
+        stats: { created: 1, duplicates: 0, review: 1 },
+      });
 
-    addTransactions([newTx]);
-    addUpload({
-      id: newTx.source_upload_id ?? crypto.randomUUID(),
-      fileName: "recibo.jpg",
-      type: "ocr",
-      status: "done",
-      createdAt: new Date().toISOString(),
-      stats: { created: 1, duplicates: 0, review: 1 },
-    });
+      const newTx = {
+        id: crypto.randomUUID(),
+        description: data.description,
+        amount: data.amount,
+        date: data.date,
+        categoryId: data.categoryId,
+        accountId: data.accountId,
+        status: "pending" as const,
+        uploadId: uploadId ?? undefined,
+      };
+
+      await addTransactions([newTx], uploadId ?? undefined);
+    } catch {
+      toast({
+        title: "Erro ao salvar OCR",
+        description: "Não foi possível salvar esta transação.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     toast({
       title: "Sucesso!",
@@ -157,7 +167,7 @@ export default function UploadsPage() {
     });
   };
 
-  const finalizeImport = (map: Mapping, rows: CsvRow[]) => {
+  const finalizeImport = async (map: Mapping, rows: CsvRow[]) => {
     const parsed = rows
       .map((row) => {
         const rawAmount = row[map.amountKey] ?? "0";
@@ -171,7 +181,6 @@ export default function UploadsPage() {
           amount: amount > 0 ? -amount : amount,
           date: new Date(date).toISOString(),
           status: "pending" as const,
-          source_upload_id: `upload_${Date.now()}`,
         };
       })
       .filter(Boolean) as Array<{
@@ -180,7 +189,6 @@ export default function UploadsPage() {
       amount: number;
       date: string;
       status: "pending";
-      source_upload_id: string;
     }>;
 
     if (!parsed.length) {
@@ -192,15 +200,26 @@ export default function UploadsPage() {
       return;
     }
 
-    addTransactions(parsed);
-    addUpload({
-      id: parsed[0].source_upload_id,
-      fileName: "importacao.csv",
-      type: "csv",
-      status: "done",
-      createdAt: new Date().toISOString(),
-      stats: { created: parsed.length, duplicates: 0, review: 0 },
-    });
+    try {
+      const uploadId = await addUpload({
+        id: crypto.randomUUID(),
+        fileName: "importacao.csv",
+        type: "csv",
+        status: "done",
+        createdAt: new Date().toISOString(),
+        stats: { created: parsed.length, duplicates: 0, review: 0 },
+      });
+
+      await addTransactions(parsed, uploadId ?? undefined);
+    } catch {
+      setStatus("idle");
+      toast({
+        title: "Erro ao importar CSV",
+        description: "Não foi possível salvar as transações.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setStatus("done");
     toast({
@@ -317,7 +336,7 @@ export default function UploadsPage() {
         onOpenChange={setIsReviewOpen}
         categories={categories}
         accounts={accounts}
-        initial={mockReceipt}
+        initial={emptyReceipt}
         onConfirm={handleConfirmOcr}
       />
 

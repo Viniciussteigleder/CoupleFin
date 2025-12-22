@@ -13,15 +13,15 @@ import { formatAmount, parseCurrency } from "@/lib/formatCurrency";
 import { trackEvent } from "@/lib/analytics";
 
 const SUGGESTIONS: Record<string, number> = {
-  cat_food: 900,
-  cat_out: 450,
-  cat_trans: 280,
-  cat_rent: 1800,
+  mercado: 900,
+  restaurantes: 450,
+  transporte: 280,
+  moradia: 1800,
 };
 
 export default function BudgetPage() {
   const router = useRouter();
-  const { categories, budgets, hydrateFromSeed } = useAppStore();
+  const { categories, budgets, setBudgets } = useAppStore();
   const [values, setValues] = useState<Record<string, string>>({});
   const [noLimit, setNoLimit] = useState<Record<string, boolean>>({});
 
@@ -61,14 +61,15 @@ export default function BudgetPage() {
   const handleSuggestion = () => {
     const suggested: Record<string, string> = {};
     categories.forEach((cat) => {
-      const amount = SUGGESTIONS[cat.id] ?? 0;
+      const key = cat.name.toLowerCase();
+      const amount = SUGGESTIONS[key] ?? 0;
       suggested[cat.id] = amount ? formatAmount(amount) : values[cat.id] || "";
     });
     setValues((prev) => ({ ...prev, ...suggested }));
     trackEvent("budget_suggestion_used");
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const newBudgets = Object.entries(values)
       .map(([categoryId, val]) => ({
         categoryId,
@@ -76,7 +77,7 @@ export default function BudgetPage() {
       }))
       .filter((b) => b.monthlyLimit > 0);
 
-    hydrateFromSeed({ budgets: newBudgets });
+    await setBudgets(newBudgets);
     trackEvent("onboarding_budget_defined_count", {
       count: newBudgets.length,
     });

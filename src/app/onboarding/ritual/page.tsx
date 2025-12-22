@@ -25,7 +25,7 @@ export default function RitualPage() {
   const [remindersEnabled, setRemindersEnabled] = useState(true);
 
   const handleFinish = async () => {
-    updateRitualPreferences({
+    await updateRitualPreferences({
       weeklyDay,
       weeklyTime,
       remindersEnabled,

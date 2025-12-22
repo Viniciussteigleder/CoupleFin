@@ -55,6 +55,12 @@ export default function InsightsPage() {
              </>
          )}
 
+         {!loading && insights.length === 0 && (
+            <div className="col-span-full rounded-xl border border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
+              Sem insights disponíveis no momento. Faça uploads para gerar recomendações.
+            </div>
+         )}
+
          {!loading && insights.map(i => (
              <Card key={i.id} className={cn("flex flex-col border-none shadow-sm h-full", 
                  i.severity === "warning" ? "bg-amber-50" : 

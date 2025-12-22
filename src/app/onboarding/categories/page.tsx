@@ -19,17 +19,6 @@ import {
 } from "@/components/ui/select";
 import { trackEvent } from "@/lib/analytics";
 
-const DEFAULT_CATEGORIES: Category[] = [
-  { id: "cat_rent", name: "Moradia", color: "#22c55e", icon: "home" },
-  { id: "cat_food", name: "Mercado", color: "#60a5fa", icon: "shopping_cart" },
-  { id: "cat_out", name: "Restaurantes", color: "#f97316", icon: "restaurant" },
-  { id: "cat_trans", name: "Transporte", color: "#a78bfa", icon: "commute" },
-  { id: "cat_health", name: "Saúde", color: "#f43f5e", icon: "medical_services" },
-  { id: "cat_ent", name: "Lazer", color: "#eab308", icon: "confirmation_number" },
-  { id: "cat_shop", name: "Compras", color: "#ec4899", icon: "shopping_bag" },
-  { id: "cat_srv", name: "Serviços", color: "#64748b", icon: "work" },
-];
-
 const ICON_OPTIONS = [
   "home",
   "shopping_cart",
@@ -48,28 +37,38 @@ const ICON_OPTIONS = [
 export default function CategoriesPage() {
   const router = useRouter();
   const { categories, setCategories, addCategory } = useAppStore();
+  const [defaultCategories] = useState<Category[]>(() => [
+    { id: crypto.randomUUID(), name: "Moradia", color: "#22c55e", icon: "home" },
+    { id: crypto.randomUUID(), name: "Mercado", color: "#60a5fa", icon: "shopping_cart" },
+    { id: crypto.randomUUID(), name: "Restaurantes", color: "#f97316", icon: "restaurant" },
+    { id: crypto.randomUUID(), name: "Transporte", color: "#a78bfa", icon: "commute" },
+    { id: crypto.randomUUID(), name: "Saúde", color: "#f43f5e", icon: "medical_services" },
+    { id: crypto.randomUUID(), name: "Lazer", color: "#eab308", icon: "confirmation_number" },
+    { id: crypto.randomUUID(), name: "Compras", color: "#ec4899", icon: "shopping_bag" },
+    { id: crypto.randomUUID(), name: "Serviços", color: "#64748b", icon: "work" },
+  ]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newIcon, setNewIcon] = useState(ICON_OPTIONS[0]);
 
   const allCategories = useMemo(() => {
-    const merged: Category[] = [...DEFAULT_CATEGORIES];
+    const merged: Category[] = [...defaultCategories];
     categories.forEach((cat) => {
       if (!merged.find((item) => item.id === cat.id)) {
         merged.push(cat);
       }
     });
     return merged;
-  }, [categories]);
+  }, [categories, defaultCategories]);
 
   useEffect(() => {
     if (categories.length > 0) {
       setSelectedIds(categories.map((c) => c.id));
     } else {
-      setSelectedIds(DEFAULT_CATEGORIES.map((c) => c.id));
+      setSelectedIds(defaultCategories.map((c) => c.id));
     }
-  }, [categories]);
+  }, [categories, defaultCategories]);
 
   const toggleCategory = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -84,7 +83,7 @@ export default function CategoriesPage() {
   const handleCreateCategory = () => {
     const trimmed = newName.trim();
     if (!trimmed) return;
-    const id = `cat_${trimmed.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`;
+    const id = crypto.randomUUID();
     const newCategory = {
       id,
       name: trimmed,
@@ -92,16 +91,17 @@ export default function CategoriesPage() {
       icon: newIcon,
     };
 
-    addCategory(newCategory);
-    setSelectedIds((prev) => [...prev, id]);
-    setNewName("");
-    setNewIcon(ICON_OPTIONS[0]);
-    setIsDialogOpen(false);
+    addCategory(newCategory).then(() => {
+      setSelectedIds((prev) => [...prev, id]);
+      setNewName("");
+      setNewIcon(ICON_OPTIONS[0]);
+      setIsDialogOpen(false);
+    });
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const selectedCats = allCategories.filter((cat) => selectedIds.includes(cat.id));
-    setCategories(selectedCats);
+    await setCategories(selectedCats);
     trackEvent("onboarding_categories_selected_count", {
       count: selectedIds.length,
     });

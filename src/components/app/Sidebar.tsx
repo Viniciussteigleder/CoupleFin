@@ -103,8 +103,8 @@ export function Sidebar() {
             <span className="material-symbols-outlined text-primary text-[20px]">group</span>
           </div>
           <div className="flex flex-col overflow-hidden flex-1">
-            <p className="text-sm font-bold truncate text-foreground">Casal Silva</p>
-            <p className="text-xs text-muted-foreground truncate">Plano Premium</p>
+            <p className="text-sm font-bold truncate text-foreground">Seu casal</p>
+            <p className="text-xs text-muted-foreground truncate">Plano atual</p>
           </div>
           <span className="material-symbols-outlined text-muted-foreground text-lg">expand_more</span>
         </div>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 
-const people = ["Todos", "Ana", "João", "Sistema"];
+const people = ["Todos", "Sistema"];
 
 export default function AuditPage() {
   const { auditLogs } = useAppStore();

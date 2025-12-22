@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/lib/store/useAppStore";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // New Stitch-style components
@@ -13,32 +13,42 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { categories, transactions, hydrateFromSeed } = useAppStore();
-  const currentMonth = "Dezembro 2024";
+  const { categories, transactions, events } = useAppStore();
+  const [insight, setInsight] = useState<{ title: string; body: string } | null>(null);
+
+  const currentMonthLabel = useMemo(() => {
+    return new Date().toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+    });
+  }, []);
 
   useEffect(() => {
-    (async () => {
-      if (categories.length === 0) {
-        try {
-          const res = await fetch("/api/seed");
-          const json = await res.json();
-          if (json.ok && json.data) {
-            hydrateFromSeed(json.data);
-          }
-        } catch (e) {
-          console.error("Failed to seed", e);
+    fetch("/api/insights")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.ok && json.data?.length) {
+          setInsight({ title: json.data[0].title, body: json.data[0].body });
+        } else {
+          setInsight(null);
         }
-      }
-    })();
-  }, [categories.length, hydrateFromSeed]);
+      })
+      .catch(() => setInsight(null));
+  }, []);
 
   // Calculate dashboard metrics
+  const now = new Date();
+  const isCurrentMonth = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  };
+
   const monthExpenses = transactions
-    .filter((t) => t.amount < 0 && t.status !== "archived")
+    .filter((t) => t.amount < 0 && t.status !== "archived" && isCurrentMonth(t.date))
     .reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
   const monthIncome = transactions
-    .filter((t) => t.amount > 0 && t.status !== "archived")
+    .filter((t) => t.amount > 0 && t.status !== "archived" && isCurrentMonth(t.date))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const projectedBalance = monthIncome - monthExpenses;
@@ -46,7 +56,13 @@ export default function DashboardPage() {
   // Category spending breakdown
   const categoryTotals = categories.slice(0, 4).map((cat) => {
     const spent = transactions
-      .filter((t) => t.amount < 0 && t.categoryId === cat.id && t.status !== "archived")
+      .filter(
+        (t) =>
+          t.amount < 0 &&
+          t.categoryId === cat.id &&
+          t.status !== "archived" &&
+          isCurrentMonth(t.date)
+      )
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const total = monthExpenses || 1;
     return {
@@ -89,7 +105,9 @@ export default function DashboardPage() {
             </button>
             <div className="flex items-center gap-2 px-6">
               <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
-              <span className="text-lg font-bold text-foreground min-w-[140px] text-center">{currentMonth}</span>
+              <span className="text-lg font-bold text-foreground min-w-[140px] text-center capitalize">
+                {currentMonthLabel}
+              </span>
             </div>
             <button 
               className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full text-muted-foreground transition-colors"
@@ -108,9 +126,9 @@ export default function DashboardPage() {
             expectedExpenses={monthExpenses}
           />
           <CommitmentsCard
-            totalRemaining={1200}
-            totalCommitted={3500}
-            upcomingCount={3}
+            totalRemaining={getUpcomingTotal(transactions, events)}
+            totalCommitted={getCommittedTotal(transactions, events)}
+            upcomingCount={getUpcomingCount(transactions, events, 7)}
             daysAhead={7}
           />
         </div>
@@ -128,8 +146,11 @@ export default function DashboardPage() {
           {/* Right Column: Insights & Activity */}
           <div className="flex flex-col gap-6">
             <InsightCard
-              title="Insight Semanal"
-              message="Vocês economizaram 15% em delivery comparado à semana passada. 👏"
+              title={insight?.title ?? "Insights do mês"}
+              message={
+                insight?.body ??
+                "Sem dados suficientes para gerar insights agora. Faça uploads para começar."
+              }
               onViewDetails={() => router.push("/insights")}
             />
             <RecentActivity
@@ -180,4 +201,67 @@ function formatRelativeDate(dateStr: string): string {
   if (diffDays === 0) return `Hoje, ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
   if (diffDays === 1) return `Ontem, ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function getCommittedTotal(
+  transactions: Array<{ amount: number; status?: string; date: string }>,
+  events: Array<{ amount: number | null; startDate: string }>
+) {
+  const month = new Date().getMonth();
+  const year = new Date().getFullYear();
+  const committedFromTransactions = transactions
+    .filter(
+      (t) =>
+        t.status !== "archived" &&
+        t.amount < 0 &&
+        new Date(t.date).getMonth() === month &&
+        new Date(t.date).getFullYear() === year
+    )
+    .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  const committedFromEvents = events
+    .filter((event) => {
+      const date = new Date(event.startDate);
+      return date.getMonth() === month && date.getFullYear() === year;
+    })
+    .reduce((acc, event) => acc + Math.abs(event.amount ?? 0), 0);
+  return committedFromTransactions + committedFromEvents;
+}
+
+function getUpcomingTotal(
+  transactions: Array<{ amount: number; status?: string; date: string }>,
+  events: Array<{ amount: number | null; startDate: string }>
+) {
+  const now = Date.now();
+  const horizon = now + 7 * 24 * 60 * 60 * 1000;
+  const upcomingTransactions = transactions
+    .filter((t) => {
+      const date = new Date(t.date).getTime();
+      return t.status === "pending" && date >= now && date <= horizon;
+    })
+    .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  const upcomingEvents = events
+    .filter((event) => {
+      const date = new Date(event.startDate).getTime();
+      return date >= now && date <= horizon;
+    })
+    .reduce((acc, event) => acc + Math.abs(event.amount ?? 0), 0);
+  return upcomingTransactions + upcomingEvents;
+}
+
+function getUpcomingCount(
+  transactions: Array<{ status?: string; date: string }>,
+  events: Array<{ startDate: string }>,
+  daysAhead: number
+) {
+  const now = Date.now();
+  const horizon = now + daysAhead * 24 * 60 * 60 * 1000;
+  const txCount = transactions.filter((t) => {
+    const date = new Date(t.date).getTime();
+    return t.status === "pending" && date >= now && date <= horizon;
+  }).length;
+  const eventCount = events.filter((event) => {
+    const date = new Date(event.startDate).getTime();
+    return date >= now && date <= horizon;
+  }).length;
+  return txCount + eventCount;
 }

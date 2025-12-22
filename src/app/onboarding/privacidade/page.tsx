@@ -15,8 +15,8 @@ export default function PrivacidadePage() {
   const { updateConsent } = useAppStore();
   const [aiAutomation, setAiAutomation] = useState(true);
 
-  const handleNext = () => {
-    updateConsent({
+  const handleNext = async () => {
+    await updateConsent({
       aiAutomation,
       consentVersion: CONSENT_VERSION,
       acceptedAt: new Date().toISOString(),

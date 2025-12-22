@@ -22,9 +22,9 @@ export default function RuleNewPage() {
     return transactions.filter((t) => t.description.toLowerCase().includes(query));
   }, [pattern, transactions]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!pattern || !categoryId) return;
-    createRule(pattern, categoryId, { applyPast });
+    await createRule(pattern, categoryId, { applyPast });
     router.push("/rules");
   };
 

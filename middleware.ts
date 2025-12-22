@@ -39,10 +39,11 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/callback") ||
-    request.nextUrl.pathname.startsWith("/onboarding");
+    request.nextUrl.pathname.startsWith("/callback");
 
-  if (!user && !isAuthRoute) {
+  const isOnboardingRoute = request.nextUrl.pathname.startsWith("/onboarding");
+
+  if (!user && !isAuthRoute && !isOnboardingRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     return NextResponse.redirect(redirectUrl);

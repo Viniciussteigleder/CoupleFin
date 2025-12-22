@@ -15,7 +15,7 @@ type ViewMode = "week" | "day";
 type FilterType = "all" | "income" | "expense" | "commitments";
 
 export default function CalendarPage() {
-  const { transactions } = useAppStore();
+  const { transactions, events } = useAppStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
@@ -28,9 +28,15 @@ export default function CalendarPage() {
     return transactions.filter((t) => {
       if (filter === "income") return t.amount > 0;
       if (filter === "expense") return t.amount < 0;
+      if (filter === "commitments") return false;
       return true;
     });
   }, [filter, transactions]);
+
+  const filteredEvents = useMemo(() => {
+    if (filter === "commitments") return events;
+    return events;
+  }, [events, filter]);
 
   const dayTotals = useMemo(() => {
     const map = new Map<string, number>();
@@ -38,14 +44,25 @@ export default function CalendarPage() {
       const key = new Date(t.date).toDateString();
       map.set(key, (map.get(key) ?? 0) + t.amount);
     });
+    filteredEvents.forEach((event) => {
+      if (!event.amount) return;
+      const key = new Date(event.startDate).toDateString();
+      map.set(key, (map.get(key) ?? 0) + event.amount * -1);
+    });
     return map;
-  }, [filteredTransactions]);
+  }, [filteredEvents, filteredTransactions]);
 
   const dayTransactions = useMemo(() => {
     return filteredTransactions.filter((t) =>
       isSameDay(new Date(t.date), selectedDate)
     );
   }, [filteredTransactions, selectedDate]);
+
+  const dayEvents = useMemo(() => {
+    return filteredEvents.filter((event) =>
+      isSameDay(new Date(event.startDate), selectedDate)
+    );
+  }, [filteredEvents, selectedDate]);
 
   return (
     <div className="flex-1 flex flex-col gap-6">
@@ -173,12 +190,28 @@ export default function CalendarPage() {
             <p className="text-xs text-muted-foreground">Eventos e transações do dia</p>
           </div>
 
-          {dayTransactions.length === 0 ? (
+          {dayTransactions.length === 0 && dayEvents.length === 0 ? (
             <div className="rounded-xl border border-border/60 bg-background p-6 text-sm text-muted-foreground">
               Nenhum lançamento para este dia.
             </div>
           ) : (
             <div className="grid gap-3">
+              {dayEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between rounded-xl border border-border/60 bg-background px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{event.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Compromisso {event.type === "recurring" ? "recorrente" : "planejado"}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold">
+                    {event.amount ? formatCurrency(Math.abs(event.amount)) : "--"}
+                  </span>
+                </div>
+              ))}
               {dayTransactions.map((t) => (
                 <div
                   key={t.id}

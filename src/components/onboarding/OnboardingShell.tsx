@@ -1,9 +1,12 @@
 "use client";
 
-import { Progress } from "@/components/ui/progress";
+import { useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { useAppStore } from "@/lib/store/useAppStore";
 
 interface OnboardingShellProps {
   children: React.ReactNode;
@@ -31,6 +34,11 @@ export function OnboardingShell({
   footerSticky = false,
 }: OnboardingShellProps) {
   const progress = (step / totalSteps) * 100;
+  const fetchData = useAppStore((state) => state.fetchData);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
