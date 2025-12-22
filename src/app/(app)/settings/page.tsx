@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { Globe, Coins, ShieldCheck } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,19 +15,18 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { useState } from "react";
-import { Globe, Coins } from "lucide-react";
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const [language, setLanguage] = useState("pt");
   const [location, setLocation] = useState("de");
   const [currency, setCurrency] = useState("eur");
+  const [aiAutomation, setAiAutomation] = useState(true);
 
   const handleSave = () => {
     toast({
       title: "Configurações salvas",
-      description: "Suas preferências de idioma e local foram atualizadas.",
+      description: "Preferências atualizadas com sucesso.",
     });
   };
 
@@ -33,7 +35,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
         <p className="text-muted-foreground">
-          Gerencie suas preferências de exibição e localização.
+          Gerencie preferências, idioma e privacidade.
         </p>
       </div>
 
@@ -50,7 +52,7 @@ export default function SettingsPage() {
               <div className="space-y-0.5">
                 <Label>Idioma do App</Label>
                 <p className="text-sm text-muted-foreground">
-                  Escolha o idioma da interface.
+                  Português é o padrão do app.
                 </p>
               </div>
               <Select value={language} onValueChange={setLanguage}>
@@ -69,7 +71,7 @@ export default function SettingsPage() {
               <div className="space-y-0.5">
                 <Label>Localização</Label>
                 <p className="text-sm text-muted-foreground">
-                  Utilizada para formatos de data e leis locais.
+                  Usada para datas e formatos locais.
                 </p>
               </div>
               <Select value={location} onValueChange={setLocation}>
@@ -113,14 +115,34 @@ export default function SettingsPage() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Barra de progresso do mês</Label>
+                <span className="text-xs text-muted-foreground">65% usado</span>
+              </div>
+              <div className="h-3 w-full rounded-full bg-muted">
+                <div className="h-3 w-2/3 rounded-full bg-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border-none shadow-sm bg-card/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Privacidade
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between gap-4">
               <div className="space-y-0.5">
-                <Label>Sincronização Automática</Label>
+                <Label>Automações da IA</Label>
                 <p className="text-sm text-muted-foreground">
-                  Identificar contas ao subir extratos.
+                  Sugestões automáticas e insights do mês.
                 </p>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={aiAutomation} onCheckedChange={setAiAutomation} />
             </div>
           </CardContent>
         </Card>

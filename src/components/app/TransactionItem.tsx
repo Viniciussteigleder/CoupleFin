@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Transaction, Category, Account } from "@/lib/store/useAppStore";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatCurrency";
@@ -44,7 +46,7 @@ export function TransactionItem({
         {category ? category.name[0] : "?"}
       </div>
 
-      <div className="flex-1 min-w-0">
+      <Link href={`/transactions/${transaction.id}`} className="flex-1 min-w-0">
          <div className="flex items-center justify-between">
             <p className="truncate font-medium text-sm">{transaction.description}</p>
             <p className={cn("font-semibold text-sm", transaction.amount < 0 ? "text-foreground" : "text-green-600")}>
@@ -72,7 +74,7 @@ export function TransactionItem({
                 </Badge>
             )}
          </div>
-      </div>
+      </Link>
 
       {onAction && (
           <div className="flex items-center gap-1">

@@ -52,10 +52,10 @@ export function CategorySpending({ categories, total }: CategorySpendingProps) {
                   <span className="text-sm font-medium text-foreground">{cat.name}</span>
                   <span className="text-sm font-bold">{cat.percentage}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-gray-100 dark:bg-white/10 rounded-full">
+                <div className="w-full h-3 bg-gray-100 dark:bg-white/10 rounded-full">
                   <div 
                     className={cn(
-                      "h-1.5 rounded-full transition-all duration-500",
+                      "h-3 rounded-full transition-all duration-500",
                       cat.color === "orange" && "bg-orange-400",
                       cat.color === "blue" && "bg-blue-500",
                       cat.color === "purple" && "bg-purple-500",

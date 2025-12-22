@@ -15,18 +15,20 @@ interface OnboardingShellProps {
   onNext?: () => void;
   nextLabel?: string;
   disableNext?: boolean;
+  footerSticky?: boolean;
 }
 
 export function OnboardingShell({
   children,
   step,
-  totalSteps = 5,
+  totalSteps = 7,
   title,
   description,
   backHref,
   onNext,
   nextLabel = "Continuar",
   disableNext = false,
+  footerSticky = false,
 }: OnboardingShellProps) {
   const progress = (step / totalSteps) * 100;
 
@@ -62,7 +64,7 @@ export function OnboardingShell({
           </div>
 
           {onNext && (
-              <div className="pt-4">
+              <div className={footerSticky ? "sticky bottom-4" : "pt-4"}>
                   <Button className="w-full" size="lg" onClick={onNext} disabled={disableNext}>
                       {nextLabel}
                   </Button>

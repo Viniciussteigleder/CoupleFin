@@ -14,18 +14,28 @@ export default function GoalsPage() {
       <div className="flex items-center justify-between">
         <div>
            <h1 className="text-xl font-semibold md:text-2xl">Metas</h1>
-           <p className="text-sm text-muted-foreground">Sonhos e objetivos do casal.</p>
+           <p className="text-sm text-muted-foreground">
+            Transforme o aprendizado em plano do mês.
+           </p>
         </div>
         <Button>
             <Plus className="mr-2 h-4 w-4" /> Nova Meta
         </Button>
       </div>
 
+      <Card className="rounded-2xl border-border/60 p-5">
+        <CardTitle className="text-base">Sugestão inteligente</CardTitle>
+        <p className="text-sm text-muted-foreground mt-2">
+          Com base na média dos últimos 3 meses, sugerimos poupar € 300 este mês.
+        </p>
+        <Button variant="outline" className="mt-4">Aplicar sugestão</Button>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
          {goals.map(goal => {
              const pct = Math.min(100, (goal.current / goal.target) * 100);
              return (
-                 <Card key={goal.id}>
+                 <Card key={goal.id} className="rounded-2xl">
                      <CardHeader className="flex flex-row items-center gap-4 pb-2">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                             <Target className="h-6 w-6" />
@@ -38,7 +48,7 @@ export default function GoalsPage() {
                         </div>
                      </CardHeader>
                      <CardContent className="space-y-2">
-                         <Progress value={pct} className="h-2" />
+                         <Progress value={pct} className="h-3" />
                          <p className="text-right text-xs text-muted-foreground">{Math.round(pct)}% concluído</p>
                      </CardContent>
                  </Card>

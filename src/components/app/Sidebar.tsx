@@ -6,20 +6,22 @@ import { cn } from "@/lib/utils";
 
 // Using Material Symbol icon names
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
+  { label: "Painel", href: "/dashboard", icon: "dashboard" },
   { label: "Transações", href: "/transactions", icon: "receipt_long" },
-  { label: "Fila de Confirmação", href: "/confirm-queue", icon: "checklist" },
+  { label: "Confirmar", href: "/confirm-queue", icon: "checklist" },
   { label: "Contas", href: "/accounts", icon: "credit_card" },
   { label: "Metas", href: "/goals", icon: "flag" },
   { label: "Calendário", href: "/calendar", icon: "calendar_month" },
   { label: "Uploads", href: "/uploads", icon: "upload_file" },
   { label: "Insights", href: "/insights", icon: "lightbulb" },
+  { label: "Regras", href: "/rules", icon: "rule" },
+  { label: "Logs", href: "/audit", icon: "receipt_long" },
   { label: "Configurações", href: "/settings", icon: "settings" },
 ];
 
 const ritualItems = [
-  { label: "Weekly Check-in", href: "/ritual/weekly", icon: "event_repeat" },
-  { label: "Monthly Review", href: "/ritual/monthly", icon: "date_range" },
+  { label: "Ritual Semanal", href: "/ritual/weekly", icon: "event_repeat" },
+  { label: "Ritual Mensal", href: "/ritual/monthly", icon: "date_range" },
 ];
 
 export function Sidebar() {
@@ -66,7 +68,7 @@ export function Sidebar() {
           
           {/* Rituals Section */}
           <div className="mt-4 mb-1 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-            Rituals
+            Rituais
           </div>
           {ritualItems.map((item) => {
             const isActive = pathname.includes(item.href);

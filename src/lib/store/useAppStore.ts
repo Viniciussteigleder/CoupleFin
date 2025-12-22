@@ -45,12 +45,56 @@ export type Goal = {
   couple_id?: string;
 };
 
+export type Rule = {
+  id: string;
+  pattern: string;
+  categoryId: string;
+  applyPast: boolean;
+  priority: "high" | "medium" | "low";
+  createdAt: string;
+};
+
+export type AuditLog = {
+  id: string;
+  actor: string;
+  action: string;
+  entity: string;
+  details?: string;
+  createdAt: string;
+};
+
+export type UploadItem = {
+  id: string;
+  fileName: string;
+  type: "csv" | "ocr";
+  status: "reading" | "mapping" | "creating" | "done" | "error";
+  createdAt: string;
+  stats?: { created: number; duplicates: number; review: number };
+};
+
+export type RitualPreferences = {
+  weeklyDay: string;
+  weeklyTime: string;
+  remindersEnabled: boolean;
+};
+
+export type ConsentSettings = {
+  aiAutomation: boolean;
+  consentVersion: string;
+  acceptedAt: string;
+};
+
 interface AppState {
   categories: Category[];
   accounts: Account[];
   transactions: Transaction[];
   budgets: Budget[];
   goals: Goal[];
+  rules: Rule[];
+  auditLogs: AuditLog[];
+  uploads: UploadItem[];
+  ritualPreferences: RitualPreferences | null;
+  consents: ConsentSettings | null;
   
   isLoading: boolean;
   error: string | null;
@@ -58,11 +102,24 @@ interface AppState {
   // Actions
   hydrateFromSeed: (data: Partial<AppState>) => void;
   fetchData: () => Promise<void>;
+  setCategories: (categories: Category[]) => void;
+  addCategory: (category: Category) => void;
+  addTransactions: (items: Transaction[]) => void;
+  addUpload: (upload: UploadItem) => void;
+  addAuditLog: (log: AuditLog) => void;
+  addRule: (rule: Rule) => void;
+  updateRitualPreferences: (prefs: RitualPreferences) => void;
+  updateConsent: (consent: ConsentSettings) => void;
   
   confirmTransactions: (ids: string[]) => Promise<void>;
+  reopenTransactions: (ids: string[]) => Promise<void>;
   setTransactionCategory: (txId: string, catId: string) => Promise<void>;
   markDuplicate: (txId: string) => Promise<void>;
-  createRule: (pattern: string, catId: string) => Promise<void>;
+  createRule: (
+    pattern: string,
+    catId: string,
+    options?: { applyPast?: boolean; priority?: Rule["priority"] }
+  ) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -71,10 +128,27 @@ export const useAppStore = create<AppState>((set) => ({
   transactions: [],
   budgets: [],
   goals: [],
+  rules: [],
+  auditLogs: [],
+  uploads: [],
+  ritualPreferences: null,
+  consents: null,
   isLoading: false,
   error: null,
 
   hydrateFromSeed: (data) => set((state) => ({ ...state, ...data })),
+  setCategories: (categories) => set({ categories }),
+  addCategory: (category) =>
+    set((state) => ({ categories: [...state.categories, category] })),
+  addTransactions: (items) =>
+    set((state) => ({ transactions: [...items, ...state.transactions] })),
+  addUpload: (upload) =>
+    set((state) => ({ uploads: [upload, ...state.uploads] })),
+  addAuditLog: (log) =>
+    set((state) => ({ auditLogs: [log, ...state.auditLogs] })),
+  addRule: (rule) => set((state) => ({ rules: [rule, ...state.rules] })),
+  updateRitualPreferences: (prefs) => set({ ritualPreferences: prefs }),
+  updateConsent: (consent) => set({ consents: consent }),
 
   fetchData: async () => {
       set({ isLoading: true });
@@ -127,6 +201,29 @@ export const useAppStore = create<AppState>((set) => ({
     // Async DB update
     const supabase = createClient();
     await supabase.from('transactions').update({ status: 'confirmed' }).in('id', ids);
+    set((state) => ({
+      auditLogs: [
+        {
+          id: crypto.randomUUID(),
+          actor: "Sistema",
+          action: "Confirmou transações",
+          entity: "transactions",
+          details: `${ids.length} itens confirmados`,
+          createdAt: new Date().toISOString(),
+        },
+        ...state.auditLogs,
+      ],
+    }));
+  },
+
+  reopenTransactions: async (ids) => {
+    set((state) => ({
+      transactions: state.transactions.map((t) =>
+        ids.includes(t.id) ? { ...t, status: "pending" } : t
+      ),
+    }));
+    const supabase = createClient();
+    await supabase.from('transactions').update({ status: 'pending' }).in('id', ids);
   },
 
   setTransactionCategory: async (txId, catId) => {
@@ -137,6 +234,19 @@ export const useAppStore = create<AppState>((set) => ({
     }));
     const supabase = createClient();
     await supabase.from('transactions').update({ category_id: catId }).eq('id', txId);
+    set((state) => ({
+      auditLogs: [
+        {
+          id: crypto.randomUUID(),
+          actor: "Sistema",
+          action: "Atualizou categoria",
+          entity: "transactions",
+          details: `Transação ${txId}`,
+          createdAt: new Date().toISOString(),
+        },
+        ...state.auditLogs,
+      ],
+    }));
   },
 
   markDuplicate: async (txId) => {
@@ -147,11 +257,44 @@ export const useAppStore = create<AppState>((set) => ({
     }));
     const supabase = createClient();
     await supabase.from('transactions').update({ status: 'duplicate' }).eq('id', txId);
+    set((state) => ({
+      auditLogs: [
+        {
+          id: crypto.randomUUID(),
+          actor: "Sistema",
+          action: "Marcou duplicata",
+          entity: "transactions",
+          details: `Transação ${txId}`,
+          createdAt: new Date().toISOString(),
+        },
+        ...state.auditLogs,
+      ],
+    }));
   },
 
-  createRule: async (pattern, catId) => {
-    // Mock only for now as Rules logic is complex (needs backend trigger usually)
-    console.log("Rule created", pattern, catId);
-    // In real app: await supabase.from('rules').insert({...})
+  createRule: async (pattern, catId, options) => {
+    const newRule: Rule = {
+      id: crypto.randomUUID(),
+      pattern,
+      categoryId: catId,
+      applyPast: options?.applyPast ?? false,
+      priority: options?.priority ?? "medium",
+      createdAt: new Date().toISOString(),
+    };
+
+    set((state) => ({
+      rules: [newRule, ...state.rules],
+      auditLogs: [
+        {
+          id: crypto.randomUUID(),
+          actor: "Sistema",
+          action: "Criou regra",
+          entity: "rules",
+          details: `Regra para ${pattern}`,
+          createdAt: new Date().toISOString(),
+        },
+        ...state.auditLogs,
+      ],
+    }));
   },
 }));

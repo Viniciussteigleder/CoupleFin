@@ -55,9 +55,9 @@ export function CommitmentsCard({
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-2 mt-auto">
+        <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-3 mt-auto">
           <div 
-            className="bg-rose-500 h-2 rounded-full transition-all duration-500" 
+            className="bg-rose-500 h-3 rounded-full transition-all duration-500" 
             style={{ width: `${paidPercentage}%` }}
           />
         </div>
