@@ -8,16 +8,19 @@ import { createClient } from "@/lib/supabase/client";
 
 const steps = [
   {
-    title: "Revisar gastos",
-    description: "Cheque gastos da semana e destaque maiores variacoes.",
+    title: "Rever acordo anterior",
+    description: "Retome o combinado da semana passada e marque o que foi cumprido.",
+    highlight: "Combinado: reduzir delivery para 2x/semana",
   },
   {
-    title: "Ajustar categorias",
-    description: "Corrija classificacoes e revise regras automaticas.",
+    title: "Ajustar metas da semana",
+    description: "Acerte limites e prioridades com base no fluxo atual.",
+    highlight: "Meta sugerida: economizar R$ 300 ate domingo",
   },
   {
-    title: "Definir foco",
-    description: "Escolha uma meta prioritaria para a proxima semana.",
+    title: "Novo acordo",
+    description: "Registre o novo combinado do casal para a proxima semana.",
+    highlight: "Ex: levar almoco 3x na semana",
   },
 ];
 
@@ -72,15 +75,16 @@ export function RitualStepper() {
           {steps.map((step, index) => (
             <div
               key={step.title}
-              className={`rounded-2xl border p-4 ${
+              className={`rounded-2xl border p-4 transition ${
                 index === activeStep
                   ? "border-primary/50 bg-primary/10"
                   : "border-border/60 bg-background"
               }`}
             >
-              <p className="text-sm font-semibold">{step.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {step.description}
+              <p className="text-sm font-semibold text-foreground">{step.title}</p>
+              <p className="text-xs text-muted-foreground">{step.description}</p>
+              <p className="mt-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                {step.highlight}
               </p>
             </div>
           ))}
