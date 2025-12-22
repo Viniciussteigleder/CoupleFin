@@ -1,0 +1,3 @@
+- Project scaffolded automatically by Copilot.
+- Files: package.json, README.md, src/index.js, __tests__/index.test.js, LICENSE, .gitignore, .github workflow
+- Run `npm install` then `npm test` to verify

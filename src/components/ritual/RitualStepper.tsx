@@ -1,0 +1,87 @@
+"use client";
+
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/client";
+
+const steps = [
+  {
+    title: "Revisar gastos",
+    description: "Cheque gastos da semana e destaque maiores variacoes.",
+  },
+  {
+    title: "Ajustar categorias",
+    description: "Corrija classificacoes e revise regras automaticas.",
+  },
+  {
+    title: "Definir foco",
+    description: "Escolha uma meta prioritaria para a proxima semana.",
+  },
+];
+
+export function RitualStepper() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  const logEvent = async (type: string, payload: Record<string, unknown>) => {
+    const supabase = createClient();
+    await supabase.from("transaction_events").insert({
+      type,
+      payload_json: payload,
+    });
+  };
+
+  const handleNext = async () => {
+    if (activeStep === 0) {
+      await logEvent("ritual_started", { step: 1 });
+    }
+
+    if (activeStep < steps.length - 1) {
+      setActiveStep((prev) => prev + 1);
+      return;
+    }
+
+    await logEvent("ritual_completed", { steps: steps.length });
+    setActiveStep(0);
+  };
+
+  const handleBack = () => {
+    if (activeStep > 0) setActiveStep((prev) => prev - 1);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Ritual semanal guiado</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          {steps.map((step, index) => (
+            <div
+              key={step.title}
+              className={`rounded-2xl border p-4 ${
+                index === activeStep
+                  ? "border-primary/50 bg-primary/10"
+                  : "border-border/60 bg-background"
+              }`}
+            >
+              <p className="text-sm font-semibold">{step.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {step.description}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleBack} disabled={activeStep === 0}>
+            Voltar
+          </Button>
+          <Button onClick={handleNext}>
+            {activeStep === steps.length - 1 ? "Finalizar" : "Proximo"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
