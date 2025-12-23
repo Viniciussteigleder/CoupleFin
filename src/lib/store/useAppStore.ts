@@ -60,6 +60,40 @@ const buildCoupleName = (user: SupabaseUser) => {
   return "Casal";
 };
 
+const getAuthedUser = async (supabase: ReturnType<typeof createClient>) => {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionData.session?.user) {
+    return sessionData.session.user as SupabaseUser;
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userData.user) {
+    return userData.user as SupabaseUser;
+  }
+
+  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshData.user) {
+    return refreshData.user as SupabaseUser;
+  }
+
+  const errorMessage = (error: unknown) =>
+    error instanceof Error ? error.message.toLowerCase() : "";
+  const isMissingSession = (error: unknown) =>
+    errorMessage(error).includes("session") || errorMessage(error).includes("token");
+
+  if (userError && !isMissingSession(userError)) {
+    throw userError;
+  }
+  if (refreshError && !isMissingSession(refreshError)) {
+    throw refreshError;
+  }
+  if (sessionError && !isMissingSession(sessionError)) {
+    throw sessionError;
+  }
+
+  return null;
+};
+
 const ensureCoupleId = async (supabase: ReturnType<typeof createClient>, user: SupabaseUser) => {
   const { data: member } = await supabase
     .from("couple_members")
@@ -249,9 +283,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setCategories: async (categories) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -285,9 +317,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addCategory: async (category) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -323,9 +353,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setAccounts: async (accounts) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -358,9 +386,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setBudgets: async (budgets) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -383,9 +409,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addTransactions: async (items, uploadId) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) {
       throw new Error("Not authenticated");
     }
@@ -440,9 +464,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addUpload: async (upload) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) {
       throw new Error("Not authenticated");
     }
@@ -490,9 +512,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addAuditLog: async (log) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -527,9 +547,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addRule: async (rule) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -564,9 +582,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addEvent: async (event) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return null;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -616,9 +632,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateRitualPreferences: async (prefs) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -651,9 +665,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateConsent: async (consent) => {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (!user) return;
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
@@ -672,9 +684,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const supabase = createClient();
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getAuthedUser(supabase);
       if (!user) {
         set({ isLoading: false, coupleId: null });
         return;
@@ -874,9 +884,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Async DB update
     const supabase = createClient();
     await supabase.from('transactions').update({ status: 'confirmed' }).in('id', ids);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (user) {
       const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
       await supabase.from("audit_logs").insert({
@@ -920,9 +928,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     const supabase = createClient();
     await supabase.from('transactions').update({ category_id: catId }).eq('id', txId);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (user) {
       const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
       await supabase.from("audit_logs").insert({
@@ -956,9 +962,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     const supabase = createClient();
     await supabase.from('transactions').update({ status: 'duplicate' }).eq('id', txId);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthedUser(supabase);
     if (user) {
       const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
       await supabase.from("audit_logs").insert({
