@@ -7,15 +7,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { useAppStore } from "@/lib/store/useAppStore";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 export function CalendarView() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<"week" | "day">("week");
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const { events } = useAppStore();
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const startDate = new Date(year, month, 1);
   const endDate = new Date(year, month + 1, 0);
+  const selectedKey = selectedDate.toISOString().slice(0, 10);
   const label = viewDate.toLocaleDateString("pt-BR", {
     month: "long",
     year: "numeric",
@@ -27,7 +31,7 @@ export function CalendarView() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("transactions")
-        .select("date, amount_cf")
+        .select("date, amount_cf, merchant")
         .gte("date", startDate.toISOString().slice(0, 10))
         .lte("date", endDate.toISOString().slice(0, 10));
       if (error) throw error;
@@ -46,7 +50,22 @@ export function CalendarView() {
     return map;
   }, [data, month, year]);
 
-  const selectedTotal = dayTotals.get(selectedDate.getDate()) ?? 0;
+  const dayTransactions = useMemo(() => {
+    return (data ?? []).filter((row) => row.date === selectedKey);
+  }, [data, selectedKey]);
+
+  const dayEvents = useMemo(() => {
+    return events.filter(
+      (event) =>
+        event.startDate === selectedKey ||
+        event.nextOccurrence === selectedKey
+    );
+  }, [events, selectedKey]);
+
+  const selectedTotal = dayTransactions.reduce(
+    (acc, row) => acc + Number(row.amount_cf ?? 0),
+    0
+  );
 
 
   const weekStart = useMemo(() => {
@@ -168,25 +187,44 @@ export function CalendarView() {
             </div>
             <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
               <div className="space-y-3 text-sm text-muted-foreground">
-                <div className="rounded-xl border border-border/60 bg-background px-4 py-3">
-                  <p className="font-semibold text-foreground">Aluguel</p>
-                  <p className="text-xs">Recorrente · R$ 1.500,00</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background px-4 py-3">
-                  <p className="font-semibold text-foreground">Supermercado</p>
-                  <p className="text-xs">R$ 189,90</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background px-4 py-3">
-                  <p className="font-semibold text-foreground">Uber</p>
-                  <p className="text-xs">R$ 42,00 · 2 viagens</p>
-                </div>
+                {dayEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-xl border border-border/60 bg-background px-4 py-3"
+                  >
+                    <p className="font-semibold text-foreground">{event.name}</p>
+                    <p className="text-xs">
+                      {event.type === "recurring" ? "Recorrente" : "Planejado"}
+                      {event.amount ? ` · ${formatCurrency(Math.abs(event.amount))}` : ""}
+                    </p>
+                  </div>
+                ))}
+                {dayTransactions.map((row, index) => (
+                  <div
+                    key={`${row.date}-${index}`}
+                    className="rounded-xl border border-border/60 bg-background px-4 py-3"
+                  >
+                    <p className="font-semibold text-foreground">
+                      {row.merchant ?? "Transação"}
+                    </p>
+                    <p className="text-xs">
+                      {formatCurrency(Math.abs(Number(row.amount_cf ?? 0)))}
+                    </p>
+                  </div>
+                ))}
+                {!dayEvents.length && !dayTransactions.length ? (
+                  <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+                    Nenhum evento ou transação neste dia.
+                  </div>
+                ) : null}
               </div>
               <div className="space-y-3 rounded-xl border border-border/60 bg-background p-4 text-sm">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">
                   Resumo do dia
                 </p>
                 <p className="text-2xl font-semibold text-foreground">
-                  {selectedTotal < 0 ? "-" : "+"}R$ {Math.abs(selectedTotal).toFixed(0)}
+                  {selectedTotal < 0 ? "-" : "+"}
+                  {formatCurrency(Math.abs(selectedTotal))}
                 </p>
                 <div className="space-y-2 text-xs text-muted-foreground">
                   <p>Historico: media de R$ 160 nos ultimos 30 dias.</p>
