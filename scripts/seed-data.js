@@ -3,24 +3,20 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
-const { loadEnv } = require('./_env');
 
-const { env } = loadEnv();
+const envPath = path.resolve(__dirname, '../.env.local');
+const envContent = fs.readFileSync(envPath, 'utf8');
+const env = {};
+envContent.split('\n').forEach(line => {
+  const [key, value] = line.split('=');
+  if (key && value) {
+    env[key.trim()] = value.trim();
+  }
+});
 
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-if (!supabaseUrl || !serviceKey) {
-  throw new Error('Missing Supabase credentials in env file.');
-}
 const supabase = createClient(supabaseUrl, serviceKey);
-
-const getArgValue = (key) => {
-  const index = process.argv.indexOf(`--${key}`);
-  return index !== -1 ? process.argv[index + 1] : undefined;
-};
-
-const seedEmail = getArgValue('email') || 'dev@example.com';
-const seedPassword = getArgValue('password') || 'password123';
 
 // Utility to parse currency
 function parseCurrency(value) {
@@ -35,22 +31,7 @@ function parseCurrency(value) {
 async function seed() {
   console.log('🚀 Starting Seeding...');
 
-  // 1. Get or Create User
-  const { data: { users } } = await supabase.auth.admin.listUsers();
-  let userId = users.find(u => u.email === seedEmail)?.id;
-  if (!userId) {
-    const { data: { user } } = await supabase.auth.admin.createUser({
-      email: seedEmail,
-      password: seedPassword,
-      email_confirm: true,
-    });
-    userId = user.id;
-    console.log('👤 Created User:', userId);
-  } else {
-    console.log('👤 Existing User:', userId);
-  }
-
-  // 2. Get or Create Couple
+  // 1. Get or Create Couple
   let coupleId;
   const { data: couples } = await supabase.from('couples').select('id').limit(1);
   if (couples && couples.length > 0) {
@@ -63,13 +44,7 @@ async function seed() {
     console.log('✅ Created new couple:', coupleId);
   }
 
-  await supabase.from('couple_members').upsert({
-    couple_id: coupleId,
-    user_id: userId,
-    role: 'admin'
-  }, { onConflict: 'couple_id,user_id' });
-
-  // 3. Categories
+  // 2. Categories
   const defaultCategories = [
     { name: "Moradia", color: "#22c55e", icon: "home", type: 'expense' },
     { name: "Mercado", color: "#60a5fa", icon: "shopping_cart", type: 'expense' },
@@ -82,15 +57,12 @@ async function seed() {
   ];
 
   for (const cat of defaultCategories) {
-    await supabase.from('categories').upsert(
-      { ...cat, couple_id: coupleId, user_id: userId },
-      { onConflict: 'name,couple_id' }
-    );
+    await supabase.from('categories').upsert({ ...cat, couple_id: coupleId }, { onConflict: 'name,couple_id' });
   }
   const { data: dbCats } = await supabase.from('categories').select('*').eq('couple_id', coupleId);
   console.log(`✅ Seeded ${dbCats.length} categories.`);
 
-  // 4. Import Samples
+  // 3. Import Samples
   const samplesDir = path.resolve(__dirname, '../Sample_transaction_import/CSV');
   const files = [
     { path: 'MM/2025-11-24_Transactions_list_Miles_&_More_Gold_Credit_Card_5310XXXXXXXX7340 (1).csv', source: 'MM', delimiter: ';' },
@@ -152,7 +124,6 @@ async function seed() {
         
         return {
             couple_id: coupleId,
-            user_id: userId,
             merchant: description || 'Desconhecido',
             amount: Math.abs(amountSign),
             amount_cf: amountSign,

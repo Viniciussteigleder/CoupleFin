@@ -18,19 +18,31 @@ export function DashboardStats() {
     },
   });
 
+  const { data: categoryCount = 0 } = useQuery({
+    queryKey: ["categories", "count"],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { count, error } = await supabase
+        .from("categories")
+        .select("id", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const total = data?.reduce((sum, row) => sum + Number(row.amount_cf), 0) ?? 0;
   const pending = data?.filter((row) => row.status === "pending").length ?? 0;
 
   const stats = [
-    { label: "Saldo do mes", value: `R$ ${total.toFixed(2)}` },
+    { label: "Saldo do mês", value: `€ ${total.toFixed(2)}` },
     { label: "Pendencias", value: `${pending} itens` },
-    { label: "Categorias ativas", value: "6" },
+    { label: "Categorias ativas", value: `${categoryCount}` },
   ];
 
   return (
     <section className="grid gap-4 md:grid-cols-3">
       {stats.map((item) => (
-        <Card key={item.label}>
+        <Card key={item.label} className="border-border/60 shadow-soft">
           <CardHeader>
             <CardTitle className="text-base text-muted-foreground">
               {item.label}

@@ -21,7 +21,7 @@ export function DuplicateMergeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Possiveis duplicatas</DialogTitle>
+          <DialogTitle>Possíveis duplicatas</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 text-sm text-muted-foreground">
           {group.map((item) => (
@@ -33,7 +33,7 @@ export function DuplicateMergeDialog({
                 {item.merchant}
               </p>
               <p className="text-xs">
-                {item.date} · R$ {Math.abs(item.amount).toFixed(2)}
+                {item.date} · € {Math.abs(item.amount).toFixed(2)}
               </p>
             </div>
           ))}
