@@ -3,24 +3,20 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
-const { loadEnv } = require('./_env');
 
-const { env } = loadEnv();
+const envPath = path.resolve(__dirname, '../.env.local');
+const envContent = fs.readFileSync(envPath, 'utf8');
+const env = {};
+envContent.split('\n').forEach(line => {
+  const [key, value] = line.split('=');
+  const k = key ? key.trim() : null;
+  const v = value ? value.trim() : null;
+  if (k && v) env[k] = v;
+});
 
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-if (!supabaseUrl || !serviceKey) {
-  throw new Error('Missing Supabase credentials in env file.');
-}
 const supabase = createClient(supabaseUrl, serviceKey);
-
-const getArgValue = (key) => {
-  const index = process.argv.indexOf(`--${key}`);
-  return index !== -1 ? process.argv[index + 1] : undefined;
-};
-
-const seedEmail = getArgValue('email') || 'dev@example.com';
-const seedPassword = getArgValue('password') || 'password123';
 
 async function getColumns(table) {
     const { data, error } = await supabase.from(table).select().limit(0);
@@ -35,8 +31,8 @@ async function getColumns(table) {
 async function run() {
     console.log('🚀 Final Unblocker Start...');
 
-    const email = seedEmail;
-    const password = seedPassword;
+    const email = 'dev@example.com';
+    const password = 'password123';
     
     // 1. User
     const { data: { users } } = await supabase.auth.admin.listUsers();
