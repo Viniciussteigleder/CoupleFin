@@ -10,6 +10,9 @@ import { CommitmentsCard } from "@/components/dashboard/CommitmentsCard";
 import { CategorySpending } from "@/components/dashboard/CategorySpending";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -34,6 +37,15 @@ export default function DashboardPage() {
         }
       })
       .catch(() => setInsight(null));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = "first_dashboard_viewed";
+    if (!window.localStorage.getItem(key)) {
+      trackEvent("first_dashboard_view");
+      window.localStorage.setItem(key, "true");
+    }
   }, []);
 
   // Calculate dashboard metrics
@@ -86,6 +98,37 @@ export default function DashboardPage() {
       icon: t.amount < 0 ? "shopping_cart" : "payments",
       type: (t.amount < 0 ? "expense" : "income") as "income" | "expense",
     }));
+
+  if (!transactions.length) {
+    return (
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
+        <div className="mx-auto flex max-w-4xl flex-col gap-6">
+          <h2 className="text-2xl font-semibold text-foreground">Painel Mensal</h2>
+          <Card className="border-border/60 p-8 shadow-soft">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                Bem-vindo(a)
+              </p>
+              <h2 className="text-2xl font-semibold text-foreground">
+                Vamos montar seu mes
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Comece importando um CSV para gerar o painel e as confirmacoes.
+              </p>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button onClick={() => router.push("/uploads")}>
+                Importar extrato (CSV)
+              </Button>
+              <Button variant="outline" onClick={() => router.push("/transactions")}>
+                Adicionar manualmente
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth">

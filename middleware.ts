@@ -38,7 +38,9 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/callback");
+    request.nextUrl.pathname.startsWith("/callback") ||
+    request.nextUrl.pathname.startsWith("/signup") ||
+    request.nextUrl.pathname.startsWith("/reset-password");
 
   const isOnboardingRoute = request.nextUrl.pathname.startsWith("/onboarding");
 

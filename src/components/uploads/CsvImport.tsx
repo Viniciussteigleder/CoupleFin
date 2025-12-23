@@ -5,8 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Papa from "papaparse";
 
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
-import { parseAmount, toAmount, toAmountCf } from "@/lib/utils/money";
+import { parseAmount, toAmountCf } from "@/lib/utils/money";
 import { normalizeDate } from "@/lib/utils/dates";
 
 const headerAliases = {
@@ -105,59 +104,31 @@ export function CsvImport() {
     setError(null);
 
     try {
-      const supabase = createClient();
       const payload = rows.map((row) => ({
-        amount: toAmount(row.amount),
-        amount_cf: toAmountCf(row.amount),
         merchant: row.merchant,
+        amount: toAmountCf(row.amount),
         date: row.date,
-        status: "pending",
-        source: "csv",
       }));
 
-      const { data, error: insertError } = await supabase
-        .from("transactions")
-        .insert(payload)
-        .select("id");
-
-      if (insertError) {
-        throw insertError;
-      }
-
-      const insertedIds = data?.map((item) => item.id) ?? [];
-
-      const { data: rules } = await supabase
-        .from("rules")
-        .select("id, keyword, category_id")
-        .not("category_id", "is", null);
-
-      if (insertedIds.length && rules?.length) {
-        for (const rule of rules) {
-          const { data: updated } = await supabase
-            .from("transactions")
-            .update({ category_id: rule.category_id })
-            .in("id", insertedIds)
-            .ilike("merchant", `%${rule.keyword}%`)
-            .select("id");
-
-          if (updated?.length) {
-            await supabase.from("transaction_events").insert({
-              type: "rule_applied_new",
-              entity_id: rule.id,
-              payload_json: { count: updated.length, keyword: rule.keyword },
-            });
-          }
-        }
-      }
-
-      await supabase.from("transaction_events").insert({
-        type: "import_csv",
-        entity_id: data?.[0]?.id ?? null,
-        payload_json: {
+      const res = await fetch("/api/transactions/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           fileName,
-          count: payload.length,
-        },
+          source: "OTHER",
+          rows: payload,
+          rawRows: rows.map((row) => ({
+            date: row.date,
+            merchant: row.merchant,
+            amount: String(row.amount),
+          })),
+        }),
       });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json?.error || "Falha ao importar CSV.");
+      }
 
       setRows([]);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
