@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
+type ImpactRow = {
   id: string;
-  description: string | null;
+  merchant: string | null;
   date: string;
-  amount: number | string | null;
-}
+  amount_cf: number | string | null;
+};
 
 export function RuleWizard() {
   const [keyword, setKeyword] = useState("");
