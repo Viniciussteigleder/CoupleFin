@@ -55,9 +55,9 @@ export default function GoalsPage() {
              );
          })}
          {goals.length === 0 && (
-             <div className="col-span-full text-center py-12 text-muted-foreground border rounded-lg">
-                 Nenhuma meta definida.
-             </div>
+             <Card className="col-span-full rounded-2xl border-border/60 p-6 text-sm text-muted-foreground">
+                 Nenhuma meta definida. Comece com uma meta simples para o mes.
+             </Card>
          )}
       </div>
     </div>

@@ -22,7 +22,7 @@ export default function AccountsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-         {accounts.map(acc => (
+         {accounts.length ? accounts.map(acc => (
              <Card key={acc.id} className="rounded-2xl">
                  <CardHeader className="flex flex-row items-center gap-4 pb-2">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -54,7 +54,11 @@ export default function AccountsPage() {
                      <Button variant="outline" size="sm">Ajustar saldo</Button>
                  </CardContent>
              </Card>
-         ))}
+         )) : (
+          <Card className="rounded-2xl border-border/60 p-6 text-sm text-muted-foreground">
+            Nenhuma conta cadastrada. Importe um CSV para sugerirmos cartoes.
+          </Card>
+         )}
       </div>
     </div>
   );
