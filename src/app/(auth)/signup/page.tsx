@@ -1,27 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthForm } from "@/components/auth/AuthForm";
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="space-y-3">
         <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-          Entrar
+          Criar conta
         </p>
-        <h1 className="text-3xl font-black">Bem-vindo de volta</h1>
+        <h1 className="text-3xl font-black">Comece agora</h1>
         <p className="text-base text-muted-foreground">
-          Email e senha para acessar seu painel.
+          Configure sua conta e importe o primeiro extrato.
         </p>
       </div>
       <Card className="border-border/60 shadow-soft">
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle>Cadastro</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <AuthForm mode="login" />
-          <p className="text-xs text-muted-foreground">
-            Login social fica disponivel em breve.
-          </p>
+        <CardContent>
+          <AuthForm mode="signup" />
         </CardContent>
       </Card>
     </div>

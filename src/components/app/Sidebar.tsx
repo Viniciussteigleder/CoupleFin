@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 // Using Material Symbol icon names
 const navItems = [
@@ -96,7 +97,7 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* Bottom Section - Couple Profile */}
+      {/* Bottom Section - Account */}
       <div className="p-4 border-t border-gray-100 dark:border-white/5">
         <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-background cursor-pointer transition-colors">
           <div 
@@ -105,11 +106,12 @@ export function Sidebar() {
             <span className="material-symbols-outlined text-primary text-[20px]">group</span>
           </div>
           <div className="flex flex-col overflow-hidden flex-1">
-            <p className="text-sm font-bold truncate text-foreground">Seu casal</p>
-            <p className="text-xs text-muted-foreground truncate">Plano atual</p>
+            <p className="text-sm font-bold truncate text-foreground">Conta</p>
+            <p className="text-xs text-muted-foreground truncate">Individual ou casal</p>
           </div>
           <span className="material-symbols-outlined text-muted-foreground text-lg">expand_more</span>
         </div>
+        <SignOutButton className="mt-3 w-full justify-center" />
       </div>
     </aside>
   );

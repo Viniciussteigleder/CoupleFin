@@ -3,10 +3,14 @@
 import { useAppStore } from "@/lib/store/useAppStore";
 import { TransactionItem } from "@/components/app/TransactionItem";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const { transactions, categories, accounts } = useAppStore();
   const [search, setSearch] = useState("");
 
@@ -39,7 +43,7 @@ export default function TransactionsPage() {
       </div>
 
       <div className="space-y-3">
-         {filteredTransactions.map(t => (
+         {filteredTransactions.length ? filteredTransactions.map(t => (
              <TransactionItem
                 key={t.id}
                 transaction={t}
@@ -47,7 +51,16 @@ export default function TransactionsPage() {
                 account={accounts.find(a => a.id === t.accountId)}
                 // No checkbox/actions for read-only view in MVP default
              />
-         ))}
+         )) : (
+          <Card className="border-border/60 p-6 text-sm text-muted-foreground">
+            Nenhuma transacao encontrada. Importe um CSV para comecar.
+            <div className="mt-4">
+              <Button onClick={() => router.push("/uploads")}>
+                Ir para uploads
+              </Button>
+            </div>
+          </Card>
+         )}
       </div>
     </div>
   );
