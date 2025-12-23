@@ -22,6 +22,8 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { parseCurrency } from "@/lib/formatCurrency";
 import { trackEvent } from "@/lib/analytics";
+import { createClient } from "@/lib/supabase/client";
+import { Input } from "@/components/ui/input";
 
 const headerAliases = {
   date: [
@@ -60,6 +62,14 @@ type Mapping = {
     amount?: { expenseSign?: string };
     currencyDefault?: string;
   };
+};
+
+type LayoutInfo = {
+  headerHash: string;
+  layoutId?: string;
+  source: "MM" | "AMEX" | "OTHER";
+  name: string;
+  needsSave: boolean;
 };
 
 type FieldOption = {
@@ -179,6 +189,9 @@ const findHeaderRowIndex = (rows: string[][]) => {
   return bestScore >= 2 ? bestIndex : -1;
 };
 
+const buildHeaderHash = (headers: string[]) =>
+  headers.map((header) => normalizeHeader(header)).join("|");
+
 const resolveImportError = (error: unknown) => {
   const message = error instanceof Error ? error.message : "";
   if (!message) return "Não foi possível salvar as transações.";
@@ -198,7 +211,7 @@ const resolveImportError = (error: unknown) => {
 export default function UploadsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { categories, accounts, addTransactions, addUpload, uploads } = useAppStore();
+  const { categories, accounts, addTransactions, addUpload, uploads, coupleId, fetchData } = useAppStore();
   const [activeTab, setActiveTab] = useState<"csv" | "ocr">("csv");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [ocrInitial, setOcrInitial] = useState({
@@ -214,6 +227,13 @@ export default function UploadsPage() {
     dateKey: "",
     descriptionKey: "",
     amountKey: "",
+  });
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [layoutInfo, setLayoutInfo] = useState<LayoutInfo>({
+    headerHash: "",
+    source: "OTHER",
+    name: "",
+    needsSave: false,
   });
   const [parsedRows, setParsedRows] = useState<CsvRow[]>([]);
   const [status, setStatus] = useState<"idle" | "reading" | "mapping" | "creating" | "done">("idle");
@@ -232,6 +252,7 @@ export default function UploadsPage() {
 
   const startUpload = () => {
     toast({ title: "Enviando arquivo...", duration: 1500 });
+    trackEvent("upload_started", { type: activeTab });
     if (activeTab === "ocr") {
       ocrInputRef.current?.click();
       return;
@@ -326,6 +347,7 @@ export default function UploadsPage() {
 
   const handleCsvFile = async (file: File) => {
     setStatus("reading");
+    setFileName(file.name);
     const delimiter = await detectDelimiter(file);
     const transformHeader = makeHeaderTransformer();
     Papa.parse<CsvRow>(file, {
@@ -382,7 +404,42 @@ export default function UploadsPage() {
             : fieldOptions
         );
 
-        const detected = detectMapping(workingFields, workingRows);
+        const headerHash = buildHeaderHash(workingFields);
+        let detected = detectMapping(workingFields, workingRows);
+
+        if (coupleId) {
+          try {
+            const supabase = createClient();
+            const { data: existingLayout } = await supabase
+              .from("csv_layouts")
+              .select("id, mapping, parsing, source, name")
+              .eq("couple_id", coupleId)
+              .eq("header_hash", headerHash)
+              .maybeSingle();
+
+            if (existingLayout?.mapping) {
+              const stored = existingLayout.mapping as Mapping;
+              detected = {
+                dateKey: stored.dateKey,
+                descriptionKey: stored.descriptionKey,
+                amountKey: stored.amountKey,
+                detectedSource: (existingLayout.source as Mapping["detectedSource"]) ?? "UNKNOWN",
+                parsing: existingLayout.parsing ?? undefined,
+              };
+              setLayoutInfo({
+                headerHash,
+                layoutId: existingLayout.id,
+                source: existingLayout.source === "MM" || existingLayout.source === "AMEX"
+                  ? existingLayout.source
+                  : "OTHER",
+                name: existingLayout.name ?? "",
+                needsSave: false,
+              });
+            }
+          } catch {
+            // ignore layout lookup
+          }
+        }
         if (!detected) {
           setStatus("mapping");
           try {
@@ -408,6 +465,15 @@ export default function UploadsPage() {
                 parsing: mappingData?.parsing ?? undefined,
               };
               setMapping(enrichedMapping);
+              setLayoutInfo({
+                headerHash,
+                source:
+                  mappingData?.detectedSource === "MM" || mappingData?.detectedSource === "AMEX"
+                    ? mappingData.detectedSource
+                    : "OTHER",
+                name: file.name.replace(/\.[^/.]+$/, ""),
+                needsSave: true,
+              });
               setStatus("creating");
               setTimeout(() => finalizeImport(enrichedMapping, workingRows), 400);
               return;
@@ -416,11 +482,27 @@ export default function UploadsPage() {
             // fallback to manual mapping
           }
 
-              setMappingOpen(true);
-              return;
+          setLayoutInfo({
+            headerHash,
+            source: "OTHER",
+            name: file.name.replace(/\.[^/.]+$/, ""),
+            needsSave: true,
+          });
+          setMappingOpen(true);
+          return;
         }
 
         setMapping(detected);
+        setLayoutInfo((prev) => ({
+          headerHash,
+          layoutId: prev.layoutId,
+          source:
+            detected.detectedSource === "MM" || detected.detectedSource === "AMEX"
+              ? detected.detectedSource
+              : "OTHER",
+          name: prev.name || file.name.replace(/\.[^/.]+$/, ""),
+          needsSave: prev.needsSave,
+        }));
         setStatus("creating");
         setTimeout(() => finalizeImport(detected, workingRows), 400);
       },
@@ -552,16 +634,45 @@ export default function UploadsPage() {
     }
 
     try {
-      const uploadId = await addUpload({
-        id: crypto.randomUUID(),
-        fileName: "importacao.csv",
-        type: "csv",
-        status: "done",
-        createdAt: new Date().toISOString(),
-        stats: { created: enriched.length, duplicates: 0, review: 0 },
+      const layoutPayload = layoutInfo.needsSave
+        ? {
+            name: layoutInfo.name || `${layoutInfo.source} layout`,
+            headerHash: layoutInfo.headerHash,
+            mapping: {
+              dateKey: map.dateKey,
+              descriptionKey: map.descriptionKey,
+              amountKey: map.amountKey,
+            },
+            parsing: map.parsing ?? undefined,
+          }
+        : undefined;
+
+      const res = await fetch("/api/transactions/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: fileName ?? "importacao.csv",
+          source: layoutInfo.source,
+          layoutId: layoutInfo.layoutId ?? undefined,
+          layout: layoutPayload,
+          rows: enriched.map((row) => ({
+            merchant: row.description,
+            amount: row.amount,
+            date: row.date,
+            sourceMeta: row.sourceMeta ?? undefined,
+            categoryId: row.categoryId ?? undefined,
+          })),
+          rawRows: rows,
+        }),
       });
 
-      await addTransactions(enriched, uploadId ?? undefined);
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json?.error || "Falha ao importar CSV.");
+      }
+
+      await fetchData();
+      trackEvent("upload_csv_completed", { count: parsed.length, source: layoutInfo.source });
     } catch (error) {
       console.error("CSV import failed", error);
       setStatus("idle");
@@ -578,7 +689,7 @@ export default function UploadsPage() {
       title: "Importação concluída",
       description: `${parsed.length} transações foram criadas.`,
     });
-    trackEvent("upload_csv_completed", { count: parsed.length });
+    setTimeout(() => router.push("/confirm-queue"), 1200);
   };
 
   return (
@@ -712,6 +823,45 @@ export default function UploadsPage() {
             <p className="text-muted-foreground">
               Precisamos confirmar quais colunas representam data, descrição e valor.
             </p>
+            {layoutInfo.needsSave ? (
+              <>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">
+                    Fonte
+                  </label>
+                  <Select
+                    value={layoutInfo.source}
+                    onValueChange={(value) =>
+                      setLayoutInfo((prev) => ({
+                        ...prev,
+                        source: value === "MM" || value === "AMEX" ? value : "OTHER",
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MM">M&amp;M</SelectItem>
+                      <SelectItem value="AMEX">Amex</SelectItem>
+                      <SelectItem value="OTHER">Outro banco</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">
+                    Nome do layout
+                  </label>
+                  <Input
+                    value={layoutInfo.name}
+                    onChange={(event) =>
+                      setLayoutInfo((prev) => ({ ...prev, name: event.target.value }))
+                    }
+                    placeholder="Ex: Amex Novembro 2025"
+                  />
+                </div>
+              </>
+            ) : null}
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase text-muted-foreground">Data</label>
               <Select value={mapping.dateKey} onValueChange={(value) => setMapping((prev) => ({ ...prev, dateKey: value }))}>
@@ -763,7 +913,12 @@ export default function UploadsPage() {
                 setStatus("creating");
                 setTimeout(() => finalizeImport(mapping, parsedRows), 300);
               }}
-              disabled={!mapping.dateKey || !mapping.descriptionKey || !mapping.amountKey}
+              disabled={
+                !mapping.dateKey ||
+                !mapping.descriptionKey ||
+                !mapping.amountKey ||
+                (layoutInfo.needsSave && !layoutInfo.name)
+              }
             >
               Confirmar mapeamento
             </Button>

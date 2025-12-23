@@ -220,6 +220,12 @@ export type ConsentSettings = {
   acceptedAt: string;
 };
 
+export type CoupleFlags = {
+  hasCompletedOnboarding: boolean;
+  hasTransactions: boolean;
+  inviteStatus: "none" | "sent" | "accepted";
+};
+
 interface AppState {
   coupleId: string | null;
   categories: Category[];
@@ -233,6 +239,7 @@ interface AppState {
   events: CalendarEvent[];
   ritualPreferences: RitualPreferences | null;
   consents: ConsentSettings | null;
+  flags: CoupleFlags | null;
   
   isLoading: boolean;
   error: string | null;
@@ -276,6 +283,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   events: [],
   ritualPreferences: null,
   consents: null,
+  flags: null,
   isLoading: false,
   error: null,
 
@@ -440,6 +448,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id, upload_id, source_meta"
       );
     if (error) throw error;
+
+    await supabase
+      .from("couple_flags")
+      .upsert({ couple_id: coupleId, has_transactions: true }, { onConflict: "couple_id" });
 
     const mapped =
       data?.map((row) => ({
@@ -703,6 +715,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         logs,
         ritual,
         consents,
+        flags,
         events,
       ] = await Promise.all([
         supabase
@@ -744,6 +757,11 @@ export const useAppStore = create<AppState>((set, get) => ({
           .select("ai_automation, consent_version, created_at")
           .eq("couple_id", coupleId)
           .order("created_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("couple_flags")
+          .select("has_completed_onboarding, has_transactions, invite_status")
+          .eq("couple_id", coupleId)
           .limit(1),
         supabase
           .from("events")
@@ -848,6 +866,13 @@ export const useAppStore = create<AppState>((set, get) => ({
               aiAutomation: consents.data[0].ai_automation,
               consentVersion: consents.data[0].consent_version,
               acceptedAt: consents.data[0].created_at,
+            }
+          : null,
+        flags: flags.data?.[0]
+          ? {
+              hasCompletedOnboarding: flags.data[0].has_completed_onboarding ?? false,
+              hasTransactions: flags.data[0].has_transactions ?? false,
+              inviteStatus: (flags.data[0].invite_status ?? "none") as CoupleFlags["inviteStatus"],
             }
           : null,
         events:
