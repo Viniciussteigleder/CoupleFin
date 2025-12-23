@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createClient } from "@/lib/supabase/client";
+import { buildCoupleName } from "@/lib/couples";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Moradia: "#22c55e",
@@ -49,17 +50,6 @@ type RuleRow = {
   created_at: string;
 };
 
-const buildCoupleName = (user: SupabaseUser) => {
-  const fullName = user.user_metadata?.full_name;
-  if (typeof fullName === "string" && fullName.trim()) {
-    return `Casal de ${fullName.trim().split(" ")[0]}`;
-  }
-  if (user.email) {
-    return `Casal de ${user.email.split("@")[0]}`;
-  }
-  return "Casal";
-};
-
 const getAuthedUser = async (supabase: ReturnType<typeof createClient>) => {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionData.session?.user) {
@@ -103,21 +93,28 @@ const ensureCoupleId = async (supabase: ReturnType<typeof createClient>, user: S
 
   if (member?.couple_id) return member.couple_id as string;
 
-  const { data: couple, error: coupleError } = await supabase
+  const coupleId = crypto.randomUUID();
+  const { error: coupleError } = await supabase
     .from("couples")
-    .insert({ name: buildCoupleName(user) })
-    .select("id")
-    .single();
+    .insert({ id: coupleId, name: buildCoupleName(user) });
   if (coupleError) throw coupleError;
 
   const { error: memberError } = await supabase.from("couple_members").insert({
-    couple_id: couple.id,
+    couple_id: coupleId,
     user_id: user.id,
     role: "admin",
   });
-  if (memberError) throw memberError;
+  if (memberError) {
+    const { data: retry } = await supabase
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (retry?.couple_id) return retry.couple_id as string;
+    throw memberError;
+  }
 
-  return couple.id as string;
+  return coupleId;
 };
 
 export type Category = {
