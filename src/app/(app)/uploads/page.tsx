@@ -179,6 +179,22 @@ const findHeaderRowIndex = (rows: string[][]) => {
   return bestScore >= 2 ? bestIndex : -1;
 };
 
+const resolveImportError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : "";
+  if (!message) return "Não foi possível salvar as transações.";
+  const lowered = message.toLowerCase();
+  if (lowered.includes("not authenticated")) {
+    return "Faça login novamente para importar.";
+  }
+  if (lowered.includes("row-level security") || lowered.includes("permission")) {
+    return "Sem permissão para salvar. Verifique o login e tente novamente.";
+  }
+  if (lowered.includes("column") && lowered.includes("does not exist")) {
+    return "Banco desatualizado. Rode as migrations do Supabase.";
+  }
+  return message;
+};
+
 export default function UploadsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -542,11 +558,12 @@ export default function UploadsPage() {
       });
 
       await addTransactions(enriched, uploadId ?? undefined);
-    } catch {
+    } catch (error) {
+      console.error("CSV import failed", error);
       setStatus("idle");
       toast({
         title: "Erro ao importar CSV",
-        description: "Não foi possível salvar as transações.",
+        description: resolveImportError(error),
         variant: "destructive",
       });
       return;
