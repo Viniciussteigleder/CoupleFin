@@ -8,11 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
-interface ImpactRow {
   id: string;
-  merchant: string | null;
+  description: string | null;
   date: string;
-  amount_cf: number | string | null;
+  amount: number | string | null;
 }
 
 export function RuleWizard() {
