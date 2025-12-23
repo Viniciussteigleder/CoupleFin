@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logTransactionEvent } from "@/lib/server/audit";
+import { buildCoupleName } from "@/lib/couples";
 
 type CsvSource = "MM" | "AMEX" | "OTHER";
 
@@ -20,6 +21,42 @@ type LayoutPayload = {
   headerHash: string;
   mapping: Record<string, string>;
   parsing?: Record<string, unknown>;
+};
+
+const ensureCoupleId = async (
+  supabase: ReturnType<typeof createClient>,
+  user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> | null }
+) => {
+  const { data: member } = await supabase
+    .from("couple_members")
+    .select("couple_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (member?.couple_id) return member.couple_id as string;
+
+  const coupleId = crypto.randomUUID();
+  const { error: coupleError } = await supabase
+    .from("couples")
+    .insert({ id: coupleId, name: buildCoupleName(user) });
+  if (coupleError) throw coupleError;
+
+  const { error: memberError } = await supabase.from("couple_members").insert({
+    couple_id: coupleId,
+    user_id: user.id,
+    role: "admin",
+  });
+  if (memberError) {
+    const { data: retry } = await supabase
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (retry?.couple_id) return retry.couple_id as string;
+    throw memberError;
+  }
+
+  return coupleId;
 };
 
 const SOURCE_TABLES: Record<
@@ -63,17 +100,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 1. Get couple_id
-    const { data: member } = await supabase
-      .from("couple_members")
-      .select("couple_id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!member) {
-      return NextResponse.json({ error: "No couple found" }, { status: 400 });
-    }
-    const coupleId = member.couple_id;
+    const coupleId = await ensureCoupleId(supabase, user);
 
     // 2. Parse Payload
     const body = await request.json();
@@ -95,7 +122,7 @@ export async function POST(request: Request) {
         .from("csv_layouts")
         .upsert(
           {
-            couple_id: member.couple_id,
+            couple_id: coupleId,
             source,
             name: layout.name ?? `${source} layout ${new Date().toISOString().slice(0, 10)}`,
             header_hash: layout.headerHash,
@@ -125,7 +152,7 @@ export async function POST(request: Request) {
       .from(sourceTables.clean)
       .select("id, dedupe_key")
       .in("dedupe_key", dedupeKeys)
-      .eq("couple_id", member.couple_id);
+      .eq("couple_id", coupleId);
 
     const existingKeys = new Set(
       (existingClean ?? []).map((row) => row.dedupe_key as string)

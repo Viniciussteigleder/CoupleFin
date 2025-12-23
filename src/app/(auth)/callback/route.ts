@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { buildCoupleName } from "@/lib/couples";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -46,21 +47,13 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (!member?.couple_id) {
-      const coupleName = user.user_metadata?.full_name
-        ? `Casal de ${String(user.user_metadata.full_name).split(" ")[0]}`
-        : user.email
-        ? `Casal de ${user.email.split("@")[0]}`
-        : "Casal";
-
-      const { data: couple } = await supabase
+      const coupleId = crypto.randomUUID();
+      const { error: coupleError } = await supabase
         .from("couples")
-        .insert({ name: coupleName })
-        .select("id")
-        .single();
-
-      if (couple?.id) {
+        .insert({ id: coupleId, name: buildCoupleName(user) });
+      if (!coupleError) {
         await supabase.from("couple_members").insert({
-          couple_id: couple.id,
+          couple_id: coupleId,
           user_id: user.id,
           role: "admin",
         });

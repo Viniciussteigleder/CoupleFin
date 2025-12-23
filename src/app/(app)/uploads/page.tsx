@@ -202,6 +202,9 @@ const resolveImportError = (error: unknown) => {
   if (lowered.includes("row-level security") || lowered.includes("permission")) {
     return "Sem permissão para salvar. Verifique o login e tente novamente.";
   }
+  if (lowered.includes("no couple")) {
+    return "Conta individual ainda não configurada. Tente novamente.";
+  }
   if (lowered.includes("column") && lowered.includes("does not exist")) {
     return "Banco desatualizado. Rode as migrations do Supabase.";
   }
@@ -650,6 +653,7 @@ export default function UploadsPage() {
       const res = await fetch("/api/transactions/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           fileName: fileName ?? "importacao.csv",
           source: layoutInfo.source,
