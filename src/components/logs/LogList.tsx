@@ -10,9 +10,11 @@ import { createClient } from "@/lib/supabase/client";
 
 const typeFilters = ["all", "import", "rule", "confirm", "ritual"] as const;
 const dateRanges = ["all", "7d", "30d"] as const;
+const people = ["todos", "Ana", "Joao", "Sistema"] as const;
 
 type FilterType = (typeof typeFilters)[number];
 type DateRange = (typeof dateRanges)[number];
+type PersonFilter = (typeof people)[number];
 
 const filterMatchers: Record<Exclude<FilterType, "all">, (type: string) => boolean> = {
   import: (type) => type.startsWith("import"),
@@ -22,10 +24,19 @@ const filterMatchers: Record<Exclude<FilterType, "all">, (type: string) => boole
   ritual: (type) => type.startsWith("ritual"),
 };
 
+function resolvePerson(payload: unknown) {
+  if (payload && typeof payload === "object" && "actor" in payload) {
+    const actor = (payload as { actor?: string }).actor;
+    if (actor) return actor;
+  }
+  return "Sistema";
+}
+
 export function LogList() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [range, setRange] = useState<DateRange>("all");
+  const [person, setPerson] = useState<PersonFilter>("todos");
 
   const { data = [] } = useQuery({
     queryKey: ["logs"],
@@ -55,12 +66,14 @@ export function LogList() {
       const matchesRange = since
         ? new Date(item.created_at).getTime() >= since.getTime()
         : true;
-      return matchesQuery && matchesFilter && matchesRange;
+      const actor = resolvePerson(item.payload_json);
+      const matchesPerson = person === "todos" ? true : actor === person;
+      return matchesQuery && matchesFilter && matchesRange && matchesPerson;
     });
-  }, [data, filter, query, range]);
+  }, [data, filter, query, range, person]);
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-soft">
       <CardHeader>
         <CardTitle>Eventos recentes</CardTitle>
       </CardHeader>
@@ -93,31 +106,56 @@ export function LogList() {
                 {value === "all" ? "todos" : value}
               </Button>
             ))}
+            {people.map((item) => (
+              <Button
+                key={item}
+                size="sm"
+                variant={person === item ? "secondary" : "outline"}
+                onClick={() => setPerson(item)}
+              >
+                {item}
+              </Button>
+            ))}
           </div>
         </div>
-        <div className="space-y-2 text-sm text-muted-foreground">
-          {filtered.length ? (
-            filtered.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-2xl border border-border/60 bg-background p-3"
-              >
-                <p className="text-sm font-semibold text-foreground">
-                  {item.type}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(item.created_at).toLocaleString()}
-                </p>
-                {item.payload_json ? (
-                  <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-muted/40 p-2 text-[11px] text-muted-foreground">
-                    {JSON.stringify(item.payload_json, null, 2)}
-                  </pre>
-                ) : null}
-              </div>
-            ))
-          ) : (
-            <p>Nenhum evento registrado.</p>
-          )}
+
+        <div className="overflow-x-auto rounded-2xl border border-border/60">
+          <div className="min-w-[720px]">
+            <div className="grid grid-cols-[180px_140px_120px_1fr] border-b border-border/60 bg-muted/30 px-4 py-2 text-xs font-semibold uppercase text-muted-foreground">
+              <span>Data</span>
+              <span>Tipo</span>
+              <span>Pessoa</span>
+              <span>Detalhes</span>
+            </div>
+            <div className="divide-y divide-border/60 text-sm text-muted-foreground">
+              {filtered.length ? (
+                filtered.map((item) => {
+                  const actor = resolvePerson(item.payload_json);
+                  return (
+                    <div
+                      key={item.id}
+                      className="grid grid-cols-[180px_140px_120px_1fr] items-start px-4 py-3"
+                    >
+                      <span>{new Date(item.created_at).toLocaleString()}</span>
+                      <span className="font-semibold text-foreground">{item.type}</span>
+                      <span>{actor}</span>
+                      {item.payload_json ? (
+                        <pre className="max-h-32 overflow-auto rounded-xl bg-muted/40 p-2 text-[11px] text-muted-foreground">
+                          {JSON.stringify(item.payload_json, null, 2)}
+                        </pre>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="px-4 py-6 text-sm text-muted-foreground">
+                  Nenhum evento registrado.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

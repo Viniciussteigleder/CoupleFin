@@ -34,7 +34,7 @@ export function DashboardStats() {
   const pending = data?.filter((row) => row.status === "pending").length ?? 0;
 
   const stats = [
-    { label: "Saldo do mes", value: `R$ ${total.toFixed(2)}` },
+    { label: "Saldo do mês", value: `€ ${total.toFixed(2)}` },
     { label: "Pendencias", value: `${pending} itens` },
     { label: "Categorias ativas", value: `${categoryCount}` },
   ];
@@ -42,7 +42,7 @@ export function DashboardStats() {
   return (
     <section className="grid gap-4 md:grid-cols-3">
       {stats.map((item) => (
-        <Card key={item.label}>
+        <Card key={item.label} className="border-border/60 shadow-soft">
           <CardHeader>
             <CardTitle className="text-base text-muted-foreground">
               {item.label}

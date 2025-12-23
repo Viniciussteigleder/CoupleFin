@@ -45,18 +45,42 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Stitch-specific semantic colors
+        "text-main": "#111816",
+        "text-muted": "#61897c",
+        "background-light": "#f6f8f7",
+        "background-dark": "#10221c",
+        "card-light": "#ffffff",
+        "card-dark": "#162d25",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "16px",
+        "3xl": "24px",
       },
       fontFamily: {
-        display: ["var(--font-display)", "sans-serif"],
-        body: ["var(--font-body)", "sans-serif"],
+        display: ["var(--font-display)", "Manrope", "sans-serif"],
+        body: ["var(--font-body)", "Noto Sans", "sans-serif"],
       },
       boxShadow: {
-        soft: "0 12px 30px -20px rgba(15, 23, 42, 0.45)",
+        soft: "0 4px 20px -2px rgba(0, 0, 0, 0.05)",
+        card: "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
       },
     },
   },

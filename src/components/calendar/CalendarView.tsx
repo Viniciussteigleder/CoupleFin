@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -9,6 +10,8 @@ import { createClient } from "@/lib/supabase/client";
 
 export function CalendarView() {
   const [viewDate, setViewDate] = useState(() => new Date());
+  const [viewMode, setViewMode] = useState<"week" | "day">("week");
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const startDate = new Date(year, month, 1);
@@ -43,43 +46,62 @@ export function CalendarView() {
     return map;
   }, [data, month, year]);
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstWeekday = new Date(year, month, 1).getDay();
+  const selectedTotal = dayTotals.get(selectedDate.getDate()) ?? 0;
 
-  const cells = useMemo(() => {
-    const items: Array<{ day: number | null; total?: number }> = [];
-    for (let i = 0; i < firstWeekday; i += 1) items.push({ day: null });
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      items.push({ day, total: dayTotals.get(day) });
-    }
-    while (items.length < 35) items.push({ day: null });
-    return items;
-  }, [daysInMonth, firstWeekday, dayTotals]);
+
+  const weekStart = useMemo(() => {
+    const date = new Date(selectedDate);
+    const day = date.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    date.setDate(date.getDate() + diff);
+    return date;
+  }, [selectedDate]);
+
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + index);
+      return date;
+    });
+  }, [weekStart]);
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-soft">
       <CardHeader>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>Agenda do mes</CardTitle>
+            <CardTitle>Agenda</CardTitle>
             <p className="text-xs text-muted-foreground">{label}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant={viewMode === "week" ? "secondary" : "outline"}
+              onClick={() => setViewMode("week")}
+            >
+              Semana
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "day" ? "secondary" : "outline"}
+              onClick={() => setViewMode("day")}
+            >
+              Dia
+            </Button>
+            <Button size="sm" variant="outline">
+              Filtros
+            </Button>
             <Button
               size="sm"
               variant="outline"
-              onClick={() =>
-                setViewDate(new Date(year, month - 1, 1))
-              }
+              onClick={() => setViewDate(new Date(year, month - 1, 1))}
             >
               Mes anterior
             </Button>
             <Button
               size="sm"
               variant="outline"
-              onClick={() =>
-                setViewDate(new Date(year, month + 1, 1))
-              }
+              onClick={() => setViewDate(new Date(year, month + 1, 1))}
             >
               Proximo mes
             </Button>
@@ -87,36 +109,94 @@ export function CalendarView() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-7 gap-2 text-center text-xs text-muted-foreground">
-          {["D", "S", "T", "Q", "Q", "S", "S"].map((day) => (
-            <div key={day}>{day}</div>
-          ))}
-        </div>
-        <div className="mt-4 grid grid-cols-7 gap-2">
-          {cells.map((cell, index) => (
-            <div
-              key={`${cell.day ?? "empty"}-${index}`}
-              className="flex h-16 flex-col items-start justify-start rounded-xl border border-border/60 bg-background p-2 text-xs"
-            >
-              {cell.day ? (
-                <>
-                  <span className="text-sm font-semibold text-foreground">
-                    {cell.day}
-                  </span>
-                  {cell.total ? (
-                    <span
-                      className={`mt-auto text-[10px] ${
-                        cell.total < 0 ? "text-red-500" : "text-emerald-600"
-                      }`}
-                    >
-                      {cell.total < 0 ? "-" : "+"}R$ {Math.abs(cell.total).toFixed(0)}
-                    </span>
-                  ) : null}
-                </>
-              ) : null}
+        {viewMode === "week" ? (
+          <>
+            <div className="grid grid-cols-7 gap-2 text-center text-xs text-muted-foreground">
+              {["S", "T", "Q", "Q", "S", "S", "D"].map((day) => (
+                <div key={day}>{day}</div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="mt-4 grid grid-cols-7 gap-2">
+              {weekDays.map((date) => {
+                const total = dayTotals.get(date.getDate());
+                const isActive =
+                  date.toDateString() === selectedDate.toDateString();
+                return (
+                  <button
+                    key={date.toISOString()}
+                    type="button"
+                    onClick={() => setSelectedDate(date)}
+                    className={`flex h-20 flex-col items-start justify-start rounded-xl border border-border/60 bg-background p-2 text-xs transition ${
+                      isActive ? "ring-2 ring-primary/40" : "hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold text-foreground">
+                      {date.getDate()}
+                    </span>
+                    {total ? (
+                      <span
+                        className={`mt-auto text-[10px] ${
+                          total < 0 ? "text-red-500" : "text-emerald-600"
+                        }`}
+                      >
+                        {total < 0 ? "-" : "+"}R$ {Math.abs(total).toFixed(0)}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-foreground">
+                  {selectedDate.toLocaleDateString("pt-BR", {
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "long",
+                  })}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Eventos e transacoes do dia
+                </p>
+              </div>
+              <Button size="sm" asChild>
+                <Link href="/calendario/evento">Adicionar evento</Link>
+              </Button>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <div className="rounded-xl border border-border/60 bg-background px-4 py-3">
+                  <p className="font-semibold text-foreground">Aluguel</p>
+                  <p className="text-xs">Recorrente · R$ 1.500,00</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background px-4 py-3">
+                  <p className="font-semibold text-foreground">Supermercado</p>
+                  <p className="text-xs">R$ 189,90</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background px-4 py-3">
+                  <p className="font-semibold text-foreground">Uber</p>
+                  <p className="text-xs">R$ 42,00 · 2 viagens</p>
+                </div>
+              </div>
+              <div className="space-y-3 rounded-xl border border-border/60 bg-background p-4 text-sm">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Resumo do dia
+                </p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {selectedTotal < 0 ? "-" : "+"}R$ {Math.abs(selectedTotal).toFixed(0)}
+                </p>
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  <p>Historico: media de R$ 160 nos ultimos 30 dias.</p>
+                  <p>Tendencia: acima do esperado nesta semana.</p>
+                  <p>Insight: ajuste lazer para manter o saldo projetado.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

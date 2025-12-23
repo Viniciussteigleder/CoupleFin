@@ -5,15 +5,22 @@ import { useQueryClient } from "@tanstack/react-query";
 import Papa from "papaparse";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { parseAmount, toAmount, toAmountCf } from "@/lib/utils/money";
 import { normalizeDate } from "@/lib/utils/dates";
 
 const headerAliases = {
-  date: ["date", "data", "transactiondate", "posteddate"],
-  merchant: ["description", "merchant", "descricao", "historico", "memo"],
-  amount: ["amount", "valor", "value", "total", "amt"],
+  date: ["date", "data", "transactiondate", "posteddate", "datum", "buchungsdatum"],
+  merchant: [
+    "description",
+    "merchant",
+    "descricao",
+    "historico",
+    "memo",
+    "beschreibung",
+    "erscheintaufihrerabrechnungals",
+  ],
+  amount: ["amount", "valor", "value", "total", "amt", "betrag"],
 };
 
 type ParsedRow = {
@@ -57,18 +64,28 @@ export function CsvImport() {
         }
 
         const parsed: ParsedRow[] = [];
+        const isCardStatement =
+          headers.includes("betrag") && headers.some((header) => header.includes("konto#"));
 
         result.data.forEach((row) => {
-          const amountValue = parseAmount(row[amountKey] ?? "");
+          const rawAmount = row[amountKey] ?? "";
+          const amountValue = parseAmount(rawAmount);
           const normalizedDate = normalizeDate(row[dateKey] ?? "");
           if (!normalizedDate || !row[merchantKey] || amountValue === null) {
             return;
           }
 
+          const rawText = String(rawAmount).trim();
+          const signedAmount = rawText.startsWith("-") || rawText.startsWith("+")
+            ? amountValue
+            : isCardStatement
+              ? -Math.abs(amountValue)
+              : amountValue;
+
           parsed.push({
             date: normalizedDate,
             merchant: row[merchantKey],
-            amount: amountValue,
+            amount: signedAmount,
           });
         });
 
@@ -153,42 +170,37 @@ export function CsvImport() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Importar CSV</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            type="file"
-            accept=".csv"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) handleFile(file);
-            }}
-            className="w-full text-sm"
-          />
-          <Button onClick={handleImport} disabled={!rows.length || loading}>
-            {loading ? "Importando..." : "Importar"}
-          </Button>
-        </div>
-        {error ? <p className="text-sm text-red-500">{error}</p> : null}
-        {rows.length ? (
-          <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-            <p className="text-xs text-muted-foreground">
-              {rows.length} linhas detectadas. Preview abaixo:
-            </p>
-            <div className="mt-3 space-y-2 text-sm">
-              {preview.map((row, index) => (
-                <div key={index} className="flex justify-between">
-                  <span className="truncate">{row.merchant}</span>
-                  <span>R$ {row.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          type="file"
+          accept=".csv"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) handleFile(file);
+          }}
+          className="w-full text-sm"
+        />
+        <Button onClick={handleImport} disabled={!rows.length || loading}>
+          {loading ? "Importando..." : "Importar"}
+        </Button>
+      </div>
+      {error ? <p className="text-sm text-red-500">{error}</p> : null}
+      {rows.length ? (
+        <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
+          <p className="text-xs text-muted-foreground">
+            {rows.length} linhas detectadas. Preview abaixo:
+          </p>
+          <div className="mt-3 space-y-2 text-sm">
+            {preview.map((row, index) => (
+              <div key={index} className="flex justify-between">
+                <span className="truncate">{row.merchant}</span>
+                <span>R$ {row.amount.toFixed(2)}</span>
+              </div>
+            ))}
           </div>
-        ) : null}
-      </CardContent>
-    </Card>
+        </div>
+      ) : null}
+    </div>
   );
 }

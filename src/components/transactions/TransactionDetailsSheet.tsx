@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -52,10 +53,7 @@ export function TransactionDetailsSheet({
   const handleCategory = async (categoryName: string) => {
     const category = categories.find((item) => item.name === categoryName);
     if (!category) return;
-    await handleUpdate(
-      { category_id: category.id },
-      "transaction_categorized"
-    );
+    await handleUpdate({ category_id: category.id }, "transaction_categorized");
   };
 
   const handleConfirm = async () => {
@@ -85,6 +83,7 @@ export function TransactionDetailsSheet({
                 {transaction.amount < 0 ? "-" : "+"}R$ {Math.abs(transaction.amount).toFixed(2)}
               </p>
             </div>
+
             <div className="space-y-3">
               <p className="text-sm font-semibold">Categoria</p>
               <CategoryPicker
@@ -93,9 +92,15 @@ export function TransactionDetailsSheet({
                 onSelect={handleCategory}
               />
             </div>
-            {message ? (
-              <p className="text-sm text-red-500">{message}</p>
-            ) : null}
+
+            <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-semibold text-foreground">Evidencias</p>
+              <p>Fonte: CSV importado</p>
+              <p>Descricao original: {transaction.merchant}</p>
+              <p>Confianca: Alta</p>
+            </div>
+
+            {message ? <p className="text-sm text-red-500">{message}</p> : null}
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={handleConfirm}>
                 Confirmar
@@ -103,8 +108,8 @@ export function TransactionDetailsSheet({
               <Button size="sm" variant="outline" onClick={handleDuplicate}>
                 Marcar duplicata
               </Button>
-              <Button size="sm" variant="ghost">
-                Editar
+              <Button size="sm" variant="ghost" asChild>
+                <Link href="/rules/nova">Criar regra</Link>
               </Button>
             </div>
           </div>

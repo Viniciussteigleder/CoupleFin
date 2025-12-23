@@ -19,7 +19,7 @@ export function TransactionsView() {
 
   return (
     <>
-      <Card>
+      <Card className="border-border/60 shadow-soft">
         <CardHeader>
           <CardTitle>Lista de transacoes</CardTitle>
         </CardHeader>
