@@ -388,6 +388,10 @@ export default function UploadsPage() {
   };
 
   const finalizeImport = async (map: Mapping, rows: CsvRow[]) => {
+    const hasNegative = rows.some((row) =>
+      String(row[map.amountKey] ?? "").trim().startsWith("-")
+    );
+    const shouldInvert = !hasNegative;
     const parsed = rows
       .map((row) => {
         const rawAmount = row[map.amountKey] ?? "0";
@@ -417,7 +421,7 @@ export default function UploadsPage() {
         return {
           id: crypto.randomUUID(),
           description,
-          amount: amount > 0 ? -amount : amount,
+          amount: shouldInvert && amount > 0 ? -amount : amount,
           date: parsedDate.toISOString(),
           status: "pending" as const,
           sourceMeta,
@@ -429,6 +433,8 @@ export default function UploadsPage() {
       amount: number;
       date: string;
       status: "pending";
+      categoryId?: string;
+      sourceMeta?: Record<string, string | number | null>;
     }>;
 
     if (!parsed.length) {
@@ -460,10 +466,19 @@ export default function UploadsPage() {
         const assignments = json?.data?.assignments ?? [];
         enriched = parsed.map((row, index) => {
           const assignment = assignments.find((item: { index: number }) => item.index === index);
-          if (assignment?.categoryId) {
-            return { ...row, categoryId: assignment.categoryId };
+          const nextMeta = { ...(row.sourceMeta ?? {}) } as Record<
+            string,
+            string | number | null
+          >;
+          if (assignment?.categoryName) nextMeta.category_i = assignment.categoryName;
+          if (assignment?.subcategoryName) nextMeta.category_ii = assignment.subcategoryName;
+          if (typeof assignment?.confidence === "number") {
+            nextMeta.category_confidence = assignment.confidence;
           }
-          return row;
+          if (assignment?.categoryId) {
+            return { ...row, categoryId: assignment.categoryId, sourceMeta: nextMeta };
+          }
+          return Object.keys(nextMeta).length ? { ...row, sourceMeta: nextMeta } : row;
         });
       } catch {
         // ignore AI failures
