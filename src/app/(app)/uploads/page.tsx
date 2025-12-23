@@ -236,7 +236,11 @@ export default function UploadsPage() {
       ocrInputRef.current?.click();
       return;
     }
-    setTimeout(() => setIsReviewOpen(true), 1200);
+    // CSV tab - trigger the CSV file input
+    const csvInput = document.querySelector('input[type="file"][accept=".csv"]') as HTMLInputElement;
+    if (csvInput) {
+      csvInput.click();
+    }
   };
 
   const handleOcrFile = async (file: File) => {
