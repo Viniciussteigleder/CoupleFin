@@ -54,6 +54,12 @@ type Mapping = {
   dateKey: string;
   descriptionKey: string;
   amountKey: string;
+  detectedSource?: "MM" | "AMEX" | "UNKNOWN";
+  parsing?: {
+    date?: { format?: string; preferPurchaseDate?: boolean };
+    amount?: { expenseSign?: string };
+    currencyDefault?: string;
+  };
 };
 
 type FieldOption = {
@@ -63,6 +69,27 @@ type FieldOption = {
 
 const normalizeHeader = (header: string) =>
   header.toLowerCase().replace(/\s+/g, "").replace(/_/g, "");
+
+const detectDelimiter = async (file: File) => {
+  const sample = await file.slice(0, 5000).text();
+  const lines = sample.split(/\r?\n/).filter((line) => line.trim()).slice(0, 6);
+  const candidates = [";", ",", "\t"];
+  let best = ",";
+  let bestScore = -1;
+
+  candidates.forEach((delimiter) => {
+    const score = lines.reduce((total, line) => {
+      const count = line.split(delimiter).length - 1;
+      return total + count;
+    }, 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = delimiter;
+    }
+  });
+
+  return best;
+};
 
 const makeHeaderTransformer = () => {
   const counts = new Map<string, number>();
@@ -92,7 +119,13 @@ const detectMapping = (fields: string[], rows: CsvRow[] = []): Mapping | null =>
   const amountKey = amountCandidates.sort((a, b) => scoreAmountKey(b, rows) - scoreAmountKey(a, rows))[0];
 
   if (!dateKey || !descriptionKey || !amountKey) return null;
-  return { dateKey, descriptionKey, amountKey };
+  const detectedSource =
+    fields.some((field) => ["authorisedon", "processedon", "paymenttype", "status"].includes(field))
+      ? "MM"
+      : fields.some((field) => ["datum", "beschreibung", "betrag", "weiteredetails"].includes(field))
+      ? "AMEX"
+      : "UNKNOWN";
+  return { dateKey, descriptionKey, amountKey, detectedSource };
 };
 
 const scoreAmountKey = (key: string, rows: CsvRow[]) => {
@@ -271,22 +304,26 @@ export default function UploadsPage() {
     setTimeout(() => router.push("/confirm-queue"), 1000);
   };
 
-  const handleCsvFile = (file: File) => {
+  const handleCsvFile = async (file: File) => {
     setStatus("reading");
+    const delimiter = await detectDelimiter(file);
     const transformHeader = makeHeaderTransformer();
     Papa.parse<CsvRow>(file, {
       header: true,
       skipEmptyLines: true,
       transformHeader,
+      delimiter,
       complete: async (result) => {
         const fields = result.meta.fields ?? [];
-        setParsedRows(result.data);
+        let workingFields = fields;
+        let workingRows = result.data;
 
-        if (fields.length <= 1) {
+        const rawHeaders = await new Promise<string[] | null>((resolve) => {
           Papa.parse<string[]>(file, {
             header: false,
             skipEmptyLines: true,
-            complete: async (raw) => {
+            delimiter,
+            complete: (raw) => {
               const rows = raw.data as string[][];
               const headerIndex = findHeaderRowIndex(rows);
               if (headerIndex >= 0) {
@@ -299,69 +336,60 @@ export default function UploadsPage() {
                     return acc;
                   }, {})
                 );
-                setMappingFields(
-                  headers.map((key, idx) => ({
-                    key,
-                    label: `${rows[headerIndex][idx] ?? key}${key.includes("__") ? ` (${key.split("__")[1]})` : ""}`,
-                  }))
-                );
-                setParsedRows(objects);
-
-                const detected = detectMapping(headers, objects);
-                if (detected) {
-                  setMapping(detected);
-                  setStatus("creating");
-                  setTimeout(() => finalizeImport(detected, objects), 400);
-                  return;
-                }
+                workingFields = headers;
+                workingRows = objects;
+                resolve(rows[headerIndex]);
+                return;
               }
-
-              setStatus("mapping");
-              setMappingOpen(true);
-            },
-          });
-          return;
-        }
-
-        const rawHeaders = await new Promise<string[] | null>((resolve) => {
-          Papa.parse<string[]>(file, {
-            header: false,
-            skipEmptyLines: true,
-            complete: (raw) => {
-              const rows = raw.data as string[][];
-              const headerIndex = findHeaderRowIndex(rows);
-              resolve(headerIndex >= 0 ? rows[headerIndex] : null);
+              resolve(null);
             },
             error: () => resolve(null),
           });
         });
 
+        setParsedRows(workingRows);
+
         const fieldOptions = fields.map((key, idx) => ({
           key,
           label: `${rawHeaders?.[idx] ?? key}${key.includes("__") ? ` (${key.split("__")[1]})` : ""}`,
         }));
-        setMappingFields(fieldOptions);
+        setMappingFields(
+          rawHeaders && workingFields.length
+            ? workingFields.map((key, idx) => ({
+                key,
+                label: `${rawHeaders[idx] ?? key}${key.includes("__") ? ` (${key.split("__")[1]})` : ""}`,
+              }))
+            : fieldOptions
+        );
 
-        const detected = detectMapping(fields, result.data);
+        const detected = detectMapping(workingFields, workingRows);
         if (!detected) {
           setStatus("mapping");
           try {
             const res = await fetch("/api/ai/csv-mapping", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ fields, samples: result.data.slice(0, 10) }),
+              body: JSON.stringify({ fields: workingFields, samples: workingRows.slice(0, 10) }),
             });
             const json = await res.json();
-                const mappingData = json?.data;
-                if (
-                  mappingData?.dateKey &&
-                  mappingData?.descriptionKey &&
-                  mappingData?.amountKey &&
-                  (mappingData?.confidence ?? 0) >= 0.5
-                ) {
-              setMapping(mappingData);
+            const mappingData = json?.data;
+            const resolved = mappingData?.mapping ?? mappingData;
+            if (
+              resolved?.dateKey &&
+              resolved?.descriptionKey &&
+              resolved?.amountKey &&
+              (mappingData?.confidence ?? 0) >= 0.5
+            ) {
+              const enrichedMapping: Mapping = {
+                dateKey: resolved.dateKey,
+                descriptionKey: resolved.descriptionKey,
+                amountKey: resolved.amountKey,
+                detectedSource: mappingData?.detectedSource ?? "UNKNOWN",
+                parsing: mappingData?.parsing ?? undefined,
+              };
+              setMapping(enrichedMapping);
               setStatus("creating");
-              setTimeout(() => finalizeImport(mappingData, result.data), 400);
+              setTimeout(() => finalizeImport(enrichedMapping, workingRows), 400);
               return;
             }
           } catch {
@@ -374,7 +402,7 @@ export default function UploadsPage() {
 
         setMapping(detected);
         setStatus("creating");
-        setTimeout(() => finalizeImport(detected, result.data), 400);
+        setTimeout(() => finalizeImport(detected, workingRows), 400);
       },
       error: () => {
         setStatus("idle");
@@ -388,10 +416,16 @@ export default function UploadsPage() {
   };
 
   const finalizeImport = async (map: Mapping, rows: CsvRow[]) => {
+    const expenseSign = map.parsing?.amount?.expenseSign;
     const hasNegative = rows.some((row) =>
       String(row[map.amountKey] ?? "").trim().startsWith("-")
     );
-    const shouldInvert = !hasNegative;
+    const shouldInvert =
+      expenseSign === "POSITIVE"
+        ? true
+        : expenseSign === "NEGATIVE"
+        ? false
+        : !hasNegative;
     const parsed = rows
       .map((row) => {
         const rawAmount = row[map.amountKey] ?? "0";
@@ -406,7 +440,7 @@ export default function UploadsPage() {
         const description = row[map.descriptionKey];
         if (!parsedDate || !description) return null;
         const sourceMeta = {
-          source: row.fonte ?? row.source ?? null,
+          source: row.fonte ?? row.source ?? map.detectedSource ?? null,
           payment_type: row.paymenttype ?? null,
           status: row.status ?? null,
           key: row.keymm ?? row.keyamex ?? null,
@@ -421,7 +455,7 @@ export default function UploadsPage() {
         return {
           id: crypto.randomUUID(),
           description,
-          amount: shouldInvert && amount > 0 ? -amount : amount,
+          amount: shouldInvert ? -amount : amount,
           date: parsedDate.toISOString(),
           status: "pending" as const,
           sourceMeta,
@@ -459,6 +493,7 @@ export default function UploadsPage() {
               description: row.description,
               amount: row.amount,
               date: row.date,
+              source: row.sourceMeta?.source ?? undefined,
             })),
           }),
         });
@@ -470,10 +505,21 @@ export default function UploadsPage() {
             string,
             string | number | null
           >;
-          if (assignment?.categoryName) nextMeta.category_i = assignment.categoryName;
-          if (assignment?.subcategoryName) nextMeta.category_ii = assignment.subcategoryName;
+          const canonical = assignment?.canonical ?? {};
+          if (assignment?.categoryName ?? canonical?.categoriaI) {
+            nextMeta.category_i = assignment?.categoryName ?? canonical?.categoriaI;
+          }
+          if (assignment?.subcategoryName ?? canonical?.categoriaII) {
+            nextMeta.category_ii = assignment?.subcategoryName ?? canonical?.categoriaII;
+          }
           if (typeof assignment?.confidence === "number") {
             nextMeta.category_confidence = assignment.confidence;
+          }
+          if (assignment?.mappedBy) {
+            nextMeta.category_mapped_by = assignment.mappedBy;
+          }
+          if (typeof assignment?.needsUserReview === "boolean") {
+            nextMeta.category_needs_review = assignment.needsUserReview;
           }
           if (assignment?.categoryId) {
             return { ...row, categoryId: assignment.categoryId, sourceMeta: nextMeta };

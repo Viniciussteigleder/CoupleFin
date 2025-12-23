@@ -386,7 +386,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
     const payload = items.map((item) => {
@@ -441,7 +443,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
     const coupleId = await ensureCoupleId(supabase, user as SupabaseUser);
     const status =

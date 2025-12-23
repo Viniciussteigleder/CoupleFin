@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { aiPrompts } from "@/lib/ai/prompts";
+import { aiPromptsEnterprise } from "@/lib/ai/promptsEnterprise";
 import { callOpenAI } from "@/lib/ai/openai";
 
 function parseHeuristic(text: string) {
@@ -13,12 +13,18 @@ function parseHeuristic(text: string) {
     date = `${year}-${m}-${d}`;
   }
   return {
+    version: "2.0",
     description: "",
     merchant: "",
     amount,
     date,
     currency: "EUR",
     confidence: amount && date ? 0.45 : 0.2,
+    evidence: {
+      amountLine: amountMatch ?? "",
+      dateLine: dateMatch ?? "",
+      merchantLine: "",
+    },
   };
 }
 
@@ -31,7 +37,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as OcrRequest;
 
   if (body.imageDataUrl) {
-    const prompt = aiPrompts.ocrExtract;
+    const prompt = aiPromptsEnterprise.ocrExtract_v2;
     const aiResult = await callOpenAI([
       { role: "system", content: prompt.system },
       {
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, data: parseHeuristic("") });
   }
 
-  const prompt = aiPrompts.ocrExtract;
+  const prompt = aiPromptsEnterprise.ocrExtract_v2;
   const aiResult = await callOpenAI([
     { role: "system", content: prompt.system },
     { role: "user", content: prompt.user({ text }) },
