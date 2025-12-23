@@ -1,23 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
-const redirectTo =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
-const resolveRedirectTo = () => redirectTo;
+const resolveRedirectTo = () => {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+};
 
 export function AuthButtons() {
   const [loading, setLoading] = useState<string | null>(null);
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
+  const { toast } = useToast();
 
   const handleOAuth = async (provider: "google" | "github") => {
     setLoading(provider);
@@ -25,44 +26,38 @@ export function AuthButtons() {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${redirectTo}/callback`,
+        redirectTo: `${resolveRedirectTo()}/callback`,
       },
     });
     setLoading(null);
   };
 
-  const handleEmailAuth = async () => {
+  const handleEmailLogin = async () => {
     if (!email || !password) {
-      alert("Por favor, preencha email e senha.");
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha email e senha.",
+        variant: "destructive",
+      });
       return;
     }
 
     setLoading("email");
     const supabase = createClient();
-    const { data, error } =
-      mode === "signup"
-        ? await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: `${resolveRedirectTo()}/login`,
-            },
-          })
-        : await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (error) {
-      alert(`${mode === "signup" ? "Erro ao criar conta" : "Erro ao fazer login"}: ${error.message}`);
+      toast({
+        title: "Erro ao fazer login",
+        description: error.message,
+        variant: "destructive",
+      });
       setLoading(null);
     } else {
-      if (mode === "signup" && !data.session) {
-        alert("Conta criada. Confirme o email para concluir o acesso.");
-        setLoading(null);
-        return;
-      }
-      router.replace("/dashboard");
+      window.location.href = "/dashboard";
     }
   };
 
@@ -102,7 +97,7 @@ export function AuthButtons() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading !== null}
-          onKeyDown={(e) => e.key === "Enter" && handleEmailAuth()}
+          onKeyDown={(e) => e.key === "Enter" && handleEmailLogin()}
         />
         <Input
           type="password"
@@ -110,32 +105,17 @@ export function AuthButtons() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading !== null}
-          onKeyDown={(e) => e.key === "Enter" && handleEmailAuth()}
+          onKeyDown={(e) => e.key === "Enter" && handleEmailLogin()}
         />
         <Button
-          onClick={handleEmailAuth}
+          onClick={handleEmailLogin}
           disabled={loading !== null}
           variant="secondary"
         >
-          {loading === "email"
-            ? mode === "signup"
-              ? "Criando..."
-              : "Entrando..."
-            : mode === "signup"
-            ? "Criar conta com Email"
-            : "Entrar com Email"}
+          {loading === "email" ? "Entrando..." : "Entrar com Email"}
         </Button>
-        <button
-          type="button"
-          className="text-xs text-muted-foreground transition hover:text-foreground"
-          onClick={() => setMode(mode === "login" ? "signup" : "login")}
-          disabled={loading !== null}
-        >
-          {mode === "login"
-            ? "Ainda não tem conta? Criar agora"
-            : "Já tem conta? Fazer login"}
-        </button>
       </div>
     </div>
   );
 }
+
