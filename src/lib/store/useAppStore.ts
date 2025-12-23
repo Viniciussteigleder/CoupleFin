@@ -437,7 +437,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       .from("transactions")
       .insert(payload)
       .select(
-        "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id"
+        "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id, upload_id, source_meta"
       );
     if (error) throw error;
 
@@ -716,7 +716,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         supabase
           .from("transactions")
           .select(
-            "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id"
+            "id, merchant, amount_cf, amount, date, category_id, account_id, status, couple_id, upload_id, source_meta"
           )
           .eq("couple_id", coupleId)
           .order("date", { ascending: false }),
