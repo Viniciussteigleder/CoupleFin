@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
-const redirectTo =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
-const resolveRedirectTo = () => redirectTo;
+const resolveRedirectTo = () => {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+};
 
 export function AuthButtons() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export function AuthButtons() {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${redirectTo}/callback`,
+        redirectTo: `${resolveRedirectTo()}/callback`,
       },
     });
     setLoading(null);
