@@ -1,0 +1,33 @@
+{
+  "screens": [
+    {
+      "id": "login",
+      "name": "Login",
+      "route": "/login",
+      "png": "design/stitch_export/login.png",
+      "html": "design/stitch_export/login.html"
+    },
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "route": "/dashboard",
+      "png": "design/stitch_export/dashboard.png",
+      "html": "design/stitch_export/dashboard.html"
+    },
+    {
+      "id": "import",
+      "name": "Import CSV",
+      "route": "/import",
+      "png": "design/stitch_export/import-csv.png",
+      "html": "design/stitch_export/import-csv.html"
+    },
+    {
+      "id": "transactions",
+      "name": "Transactions",
+      "route": "/transactions",
+      "png": "design/stitch_export/transactions.png",
+      "html": "design/stitch_export/transactions.html"
+    }
+  ],
+  "_how_to_fill": "Add objects with id, name, route, png, html. Keep paths relative."
+}

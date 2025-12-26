@@ -161,6 +161,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={() => router.push("/import")}>Importar CSV</Button>
+          <Button variant="outline" onClick={() => router.push("/transactions")}>
+            Ver transações
+          </Button>
+        </div>
+
         {/* Hero Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <ProjectionCard

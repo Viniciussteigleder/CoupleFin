@@ -1,0 +1,59 @@
+{
+  "appName": "FinCouple",
+  "common": {
+    "continue": "Continuar",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "back": "Voltar"
+  },
+  "dashboard": {
+    "importCta": "Importar CSV"
+  },
+  "import": {
+    "kicker": "Importação",
+    "title": "Importar CSV",
+    "description": "Traga o extrato com as colunas date, description, amount e currency (category1/category2 são opcionais).",
+    "uploadLabel": "Anexe o CSV do extrato",
+    "status": {
+      "idle": "Selecione um arquivo CSV para começar.",
+      "parsing": "Lendo e validando seu arquivo...",
+      "preview": "Pré-visualização pronta. Confirme para importar.",
+      "importing": "Enviando para o Supabase...",
+      "success": "Importação concluída. As transações aparecerão no painel.",
+      "error": "Ajuste o arquivo ou tente novamente."
+    },
+    "previewTitle": "Pré-visualização",
+    "previewRows": "Primeiras linhas",
+    "table": {
+      "date": "Data",
+      "description": "Descrição",
+      "amount": "Valor",
+      "currency": "Moeda"
+    },
+    "confirmButton": "Confirmar importação",
+    "importing": "Importando...",
+    "reset": "Reiniciar fluxo",
+    "selectAnother": "Selecionar outro CSV",
+    "links": {
+      "transactions": "Ver transações",
+      "dashboard": "Voltar ao painel"
+    },
+    "summary": {
+      "title": "Resumo da importação:",
+      "total": "Total enviado",
+      "saved": "Linhas salvas",
+      "duplicates": "Duplicadas ignoradas",
+      "rulesApplied": "Regras aplicadas"
+    },
+    "errors": {
+      "noRows": "Nenhuma linha válida encontrada.",
+      "parse": "Erro ao processar o CSV.",
+      "import": "Falha ao importar CSV."
+    }
+  },
+  "transactions": {
+    "title": "Transações",
+    "empty": "Nenhuma transação encontrada. Importe um CSV para começar.",
+    "error": "Não foi possível carregar as transações. Tente novamente."
+  }
+}
